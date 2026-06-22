@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -22,24 +23,17 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-2xl mx-auto px-4 py-10 pb-24">
-
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-slate-900">🏇 Derby Day</h1>
           <p className="text-sm text-slate-500 mt-1">Welcome back, {user.email}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 mb-8">
-          <Link
-            href="/group/new"
-            className="flex flex-col items-center justify-center gap-2 p-5 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-semibold text-sm transition-colors text-center"
-          >
+          <Link href="/group/new" className="flex flex-col items-center justify-center gap-2 p-5 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-semibold text-sm transition-colors text-center">
             <span className="text-2xl">➕</span>
             Create Competition
           </Link>
-          <Link
-            href="/join"
-            className="flex flex-col items-center justify-center gap-2 p-5 rounded-2xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-colors text-center"
-          >
+          <Link href="/join" className="flex flex-col items-center justify-center gap-2 p-5 rounded-2xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-colors text-center">
             <span className="text-2xl">🎯</span>
             Join Competition
           </Link>
@@ -49,7 +43,6 @@ export default async function HomePage() {
           <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
             Your Competitions
           </h2>
-
           {activeGroups.length === 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
               <p className="text-slate-400 text-sm">No competitions yet.</p>
@@ -58,15 +51,9 @@ export default async function HomePage() {
           ) : (
             <div className="space-y-3">
               {activeGroups.map((group) => (
-                <Link
-                  key={group.id}
-                  href={`/group/${group.id}`}
-                  className="flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-200 hover:border-green-300 hover:shadow-sm transition-all"
-                >
+                <Link key={group.id} href={`/group/${group.id}`} className="flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-200 hover:border-green-300 hover:shadow-sm transition-all">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">
-                      {group.type === "last_man_standing" ? "⚽" : "🏇"}
-                    </span>
+                    <span className="text-2xl">{group.type === "last_man_standing" ? "⚽" : "🏇"}</span>
                     <div>
                       <p className="font-semibold text-slate-900 text-sm">{group.name}</p>
                       <p className="text-xs text-slate-400 mt-0.5">
@@ -83,15 +70,7 @@ export default async function HomePage() {
           )}
         </div>
 
-        <form action="/auth/signout" method="post" className="mt-10 text-center">
-          <button
-            type="submit"
-            className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-          >
-            Sign out
-          </button>
-        </form>
-
+        <SignOutButton />
       </div>
     </div>
   );
