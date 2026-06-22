@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import RaceEntryDeadlineClock, { isDeadlinePassed } from "@/components/racing/race-entry-deadline-clock";
 
-export default function EnterTipsPage() {
+export default function EnterTipsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const meetingId = searchParams.get("meetingId");
@@ -71,15 +71,20 @@ export default function EnterTipsPage() {
     load();
   }, [meetingId]);
 
+  const checkExistingEntry = async () => {
+    let query = supabase.from("entries").select("id").eq("meeting_id", meetingId!).eq("user_email", userEmail);
+    if (groupId) query = query.eq("group_id", groupId);
+    else query = query.is("group_id", null);
+    const { data } = await query;
+    return data && data.length > 0;
+  };
+
   const handleNameContinue = async () => {
     setCheckingName(true);
     const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
     setName(fullName);
-    
-    const { data: existing } = await query;let query = supabase.from("entries").select("id").eq("meeting_id", meetingId!).eq("user_email", userEmail);
-if (groupId) query = query.eq("group_id", groupId);
-else query = query.is("group_id", null);
-    if (existing && existing.length > 0) setAlreadyEntered(true);
+    const exists = await checkExistingEntry();
+    if (exists) setAlreadyEntered(true);
     setNameSubmitted(true);
     setCheckingName(false);
   };
@@ -97,11 +102,8 @@ else query = query.is("group_id", null);
       toast.error("Entry deadline has passed. Picks are now locked.");
       return;
     }
-    
-    const { data: existing let query = supabase.from("entries").select("id").eq("meeting_id", meetingId!).eq("user_email", userEmail);
-if (groupId) query = query.eq("group_id", groupId);
-else query = query.is("group_id", null);} = await query;
-    if (existing && existing.length > 0) {
+    const exists = await checkExistingEntry();
+    if (exists) {
       toast.error("You have already submitted an entry for this meeting.");
       setAlreadyEntered(true);
       return;
@@ -116,7 +118,7 @@ else query = query.is("group_id", null);} = await query;
     }));
     const { error } = await supabase.from("entries").insert({
       meeting_id: meetingId,
-      ...(groupId ? { group_id: groupId } : {}),
+      group_id: groupId || null,
       user_email: userEmail,
       participant_name: name.trim(),
       selections: selArray,
@@ -281,8 +283,7 @@ else query = query.is("group_id", null);} = await query;
               </div>
               <div className="flex flex-col gap-2">
                 {(race.horses || []).map((horse: any) => (
-                  <button
-                    key={horse.name}
+                  <button key={horse.name}
                     onClick={() => handleSelect(race.id, selections[race.id] === horse.name ? "" : horse.name)}
                     className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-sm font-medium transition-all text-left w-full ${
                       selections[race.id] === horse.name
@@ -324,11 +325,8 @@ else query = query.is("group_id", null);} = await query;
             <Star className="w-4 h-4 inline mr-1" /> Don&apos;t forget to mark your <strong>Best Chance</strong> — it scores double points!
           </div>
         )}
-        <button
-          onClick={handleSubmit}
-          disabled={!allSelected || !bestChance || saving}
-          className="w-full h-12 bg-slate-900 hover:bg-slate-700 text-white rounded-xl text-base font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
-        >
+        <button onClick={handleSubmit} disabled={!allSelected || !bestChance || saving}
+          className="w-full h-12 bg-slate-900 hover:bg-slate-700 text-white rounded-xl text-base font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
           <Send className="w-4 h-4" />
           {saving ? "Submitting..." : "Submit Entry"}
         </button>
