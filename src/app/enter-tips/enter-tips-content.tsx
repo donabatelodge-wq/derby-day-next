@@ -75,9 +75,10 @@ export default function EnterTipsPage() {
     setCheckingName(true);
     const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
     setName(fullName);
-    let query = supabase.from("entries").select("id").eq("meeting_id", meetingId!).eq("user_email", userEmail);
-    if (groupId) query = query.eq("group_id", groupId);
-    const { data: existing } = await query;
+    
+    const { data: existing } = await query;let query = supabase.from("entries").select("id").eq("meeting_id", meetingId!).eq("user_email", userEmail);
+if (groupId) query = query.eq("group_id", groupId);
+else query = query.is("group_id", null);
     if (existing && existing.length > 0) setAlreadyEntered(true);
     setNameSubmitted(true);
     setCheckingName(false);
@@ -96,9 +97,10 @@ export default function EnterTipsPage() {
       toast.error("Entry deadline has passed. Picks are now locked.");
       return;
     }
-    let query = supabase.from("entries").select("id").eq("meeting_id", meetingId!).eq("user_email", userEmail);
-    if (groupId) query = query.eq("group_id", groupId);
-    const { data: existing } = await query;
+    
+    const { data: existing let query = supabase.from("entries").select("id").eq("meeting_id", meetingId!).eq("user_email", userEmail);
+if (groupId) query = query.eq("group_id", groupId);
+else query = query.is("group_id", null);} = await query;
     if (existing && existing.length > 0) {
       toast.error("You have already submitted an entry for this meeting.");
       setAlreadyEntered(true);
