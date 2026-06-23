@@ -167,7 +167,7 @@ export default function NewGroupPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col">
 
         {/* Step 1 — Type */}
         {step === 1 && (
@@ -241,16 +241,16 @@ export default function NewGroupPage() {
           <div className="space-y-2">
             <p className="text-slate-500 text-sm mb-4">Select the league your competition will be based on.</p>
             {["Premier League 🏴󠁧󠁢󠁥󠁮󠁧󠁿", "La Liga 🇪🇸", "Bundesliga 🇩🇪", "Serie A 🇮🇹", "Ligue 1 🇫🇷", "Eredivisie 🇳🇱", "AFL 🇦🇺", "NRL 🇦🇺", "NFL 🇺🇸"].map(league => (
-              <button key={league} onClick={() => setSelectedLeague(league)}
-                className="w-full flex items-center justify-between px-5 py-4 rounded-2xl border-2 text-left transition-all active:scale-95 shadow-sm"
-                style={{
-                  borderColor: selectedLeague === league ? "#a855f7" : "transparent",
-                  background: selectedLeague === league ? "#faf5ff" : "#ffffff"
-                }}>
-                <span className="font-semibold text-slate-900">{league}</span>
-                {selectedLeague === league && <Check className="w-5 h-5 text-purple-500" />}
-              </button>
-            ))}
+  <button key={league} onClick={() => setSelectedLeague(league)}
+    className="w-full flex items-center justify-between px-5 py-4 rounded-2xl border-2 text-left transition-all active:scale-95 shadow-sm"
+    style={{
+      borderColor: selectedLeague === league ? "#a855f7" : "transparent",
+      background: selectedLeague === league ? "#faf5ff" : "#ffffff"
+    }}>
+    <span className="font-semibold text-slate-900 text-base">{league}</span>
+    {selectedLeague === league && <Check className="w-5 h-5 text-purple-500" />}
+  </button>
+))}
           </div>
         )}
 
