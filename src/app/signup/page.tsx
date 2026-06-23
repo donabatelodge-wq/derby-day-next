@@ -46,7 +46,7 @@ export default function SignupPage() {
           </p>
         </div>
         <div className="w-full rounded-t-3xl px-6 pt-8 pb-6 bg-white"
-          style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
+          style={{ paddingBottom: "calc(4.5rem + env(safe-area-inset-bottom))" }}>
           <Link href="/login"
             className="block w-full h-12 rounded-xl text-white font-bold text-base text-center leading-[3rem] transition-all active:scale-95"
             style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
