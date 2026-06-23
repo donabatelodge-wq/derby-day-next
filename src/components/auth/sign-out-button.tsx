@@ -14,13 +14,12 @@ export function SignOutButton() {
   };
 
   return (
-    <div className="mt-10 text-center">
-      <button
-        onClick={handleSignOut}
-        className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-      >
-        Sign out
-      </button>
-    </div>
+    <button
+      onClick={handleSignOut}
+      className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+      style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)" }}
+    >
+      Sign out
+    </button>
   );
 }
