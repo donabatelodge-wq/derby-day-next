@@ -70,7 +70,7 @@ export default function SignupPage() {
       </div>
 
       <div className="w-full rounded-t-3xl px-6 pt-8 pb-6 bg-white"
-        style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
+        style={{ paddingBottom: "calc(4.5rem + env(safe-area-inset-bottom))" }}>
 
         <h2 className="text-2xl font-bold text-slate-900 mb-1">Create Account</h2>
         <p className="text-sm text-slate-500 mb-6">Join Derby Day — it&apos;s free to sign up</p>
