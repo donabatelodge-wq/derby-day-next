@@ -43,7 +43,7 @@ export default function LoginPage() {
       <div className="w-full rounded-t-3xl px-6 pt-8 pb-6"
         style={{
           background: "#ffffff",
-          paddingBottom: "calc(2.5rem + env(safe-area-inset-bottom))",
+          paddingBottom: "calc(4.5rem + env(safe-area-inset-bottom))",
         }}>
 
         <h2 className="text-2xl font-bold text-slate-900 mb-1">Sign In</h2>
