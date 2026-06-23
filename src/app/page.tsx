@@ -1,108 +1,99 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { SignOutButton } from "@/components/auth/sign-out-button";
+import { HomeButtons } from "@/components/home/home-buttons";
 
 export default async function HomePage() {
   const supabase = await createClient();
-
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-  if (!user) {
-    redirect("/login");
-  }
+  const { data: profile } = await supabase
+    .from("profiles").select("role").eq("id", user.id).single();
+
+  const isAdmin = profile?.role === "admin";
 
   const { data: groups } = await supabase
     .from("groups")
-    .select("id, name, type, status, member_emails, invite_code, owner_email")
+    .select("id, name, type, status, member_emails, owner_email")
     .or(`owner_email.eq.${user.email},member_emails.cs.{${user.email}}`)
+    .neq("status", "archived")
     .order("created_at", { ascending: false });
 
-  const activeGroups = (groups ?? []).filter((g) => g.status !== "archived");
-  const firstName = user.email?.split("@")[0] || "there";
+  const { data: welcomeContent } = await supabase
+    .from("welcome_content").select("*").single();
+
+  const content = welcomeContent || {
+    title: "Welcome to Derby Day",
+    subtitle: "Your ultimate Horse Racing and Football experience",
+    show_title: true,
+    show_subtitle: true,
+    show_racing_competition_button: true,
+    show_lms_button: true,
+    show_join_group_button: true,
+    button_racing_competition_label: "Start A Racing Competition 🏇",
+    button_football_competition_label: "Start A Football Competition ⚽",
+    button_join_group_label: "Join A Competition",
+  };
+
+  const myGroups = groups ?? [];
 
   return (
-    <div className="min-h-screen" style={{ background: "#f1f5f9" }}>
+    <div className="min-h-screen flex flex-col pb-24" style={{ background: "var(--bg)" }}>
+      <div className="flex-1 flex flex-col items-center justify-center px-5 py-8">
+        <div className="w-full max-w-lg">
 
-      {/* Header */}
-      <div className="px-4 pt-12 pb-6" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f4c2a 100%)" }}>
-        <div className="max-w-2xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-2xl"
-                style={{ background: "rgba(34,197,94,0.2)", border: "1px solid rgba(34,197,94,0.4)" }}>
-                🏇
-              </div>
-              <div>
-                <h1 className="text-white font-black text-xl tracking-tight">Derby Day</h1>
-                <p className="text-green-400 text-xs font-medium">Welcome back, {firstName}</p>
+          {myGroups.length > 0 && (
+            <div className="w-full mb-6">
+              <p className="text-xs font-semibold uppercase tracking-widest mb-3"
+                style={{ color: "var(--text-muted)" }}>
+                🏆 Your Live Competitions
+              </p>
+              <div className="flex flex-col gap-3">
+                {myGroups.slice(0, 3).map((g, index) => {
+                  const isFirst = index === 0;
+                  const emoji = g.type === "last_man_standing" ? "⚽" : "🏇";
+                  return (
+                    <Link key={g.id} href={`/group/${g.id}`}
+                      className="w-full text-left rounded-2xl px-4 py-4 transition-transform active:scale-95 block"
+                      style={{
+                        background: isFirst ? "linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)" : "var(--bg-card)",
+                        border: isFirst ? "2px solid #f59e0b" : "1px solid var(--border)",
+                        boxShadow: isFirst ? "0 4px 20px rgba(245,158,11,0.2)" : "none"
+                      }}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-bold text-sm" style={{ color: isFirst ? "#ffffff" : "var(--text-primary)" }}>
+                            {emoji} {g.name}
+                          </p>
+                          <p className="text-xs mt-0.5" style={{ color: isFirst ? "rgba(255,255,255,0.6)" : "var(--text-muted)" }}>
+                            {(g.member_emails || []).length} players{isFirst ? " · Active now" : ""}
+                          </p>
+                        </div>
+                        <span style={{ color: isFirst ? "#f59e0b" : "var(--text-muted)" }}>→</span>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
-            <SignOutButton />
-          </div>
+          )}
 
-          {/* Action buttons */}
-          <div className="grid grid-cols-2 gap-3">
-            <Link href="/group/new"
-              className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl text-white font-bold text-sm text-center transition-all active:scale-95"
-              style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)", boxShadow: "0 4px 20px rgba(34,197,94,0.3)" }}>
-              <span className="text-2xl">➕</span>
-              Create Competition
-            </Link>
-            <Link href="/join"
-              className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl font-bold text-sm text-center transition-all active:scale-95"
-              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "#ffffff" }}>
-              <span className="text-2xl">🎯</span>
-              Join Competition
-            </Link>
-          </div>
+          {content.show_title !== false && (
+            <h1 className="text-4xl font-bold tracking-tight mb-3 text-center" style={{ color: "var(--text-primary)" }}>
+              {content.title}
+            </h1>
+          )}
+
+          {content.show_subtitle !== false && content.subtitle && (
+            <p className="text-lg mb-8 text-center" style={{ color: "var(--text-secondary)" }}>
+              {content.subtitle}
+            </p>
+          )}
+
+          <HomeButtons content={content} isAdmin={isAdmin} userEmail={user.email ?? ""} />
+
         </div>
-      </div>
-
-      {/* Competitions list */}
-      <div className="max-w-2xl mx-auto px-4 py-6 pb-24">
-        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">
-          Your Competitions
-        </h2>
-
-        {activeGroups.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-10 text-center">
-            <div className="text-4xl mb-3">🏆</div>
-            <h3 className="font-bold text-slate-900 mb-1">No competitions yet</h3>
-            <p className="text-sm text-slate-500 mb-5">Create one or join with an invite code</p>
-            <Link href="/group/new"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-bold"
-              style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
-              ➕ Create your first group
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {activeGroups.map((group) => {
-              const isOwner = group.owner_email === user.email;
-              const memberCount = group.member_emails?.length ?? 0;
-              const isRacing = group.type === "horse_racing";
-              return (
-                <Link key={group.id} href={`/group/${group.id}`}
-                  className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-slate-100 hover:border-green-200 hover:shadow-sm transition-all active:scale-95">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
-                    style={{ background: isRacing ? "rgba(34,197,94,0.1)" : "rgba(168,85,247,0.1)" }}>
-                    {isRacing ? "🏇" : "⚽"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-900 truncate">{group.name}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {memberCount} member{memberCount !== 1 ? "s" : ""}
-                      {isOwner && <span className="ml-2 text-green-500 font-semibold">· Owner</span>}
-                      <span className="ml-2 font-mono text-green-500">{group.invite_code}</span>
-                    </p>
-                  </div>
-                  <span className="text-slate-300 text-lg">›</span>
-                </Link>
-              );
-            })}
-          </div>
-        )}
       </div>
     </div>
   );
