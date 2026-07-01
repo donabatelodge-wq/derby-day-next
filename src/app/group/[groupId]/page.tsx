@@ -191,7 +191,6 @@ export default function GroupDetailPage() {
   const [finalised, setFinalised] = useState(false);
   const [hasPaid, setHasPaid] = useState(true);
   const [now, setNow] = useState(new Date());
-  const [selectedPackSize, setSelectedPackSize] = useState(10);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000);
@@ -256,15 +255,6 @@ export default function GroupDetailPage() {
 
       if (g.entry_fee_enabled && user.email) {
         setHasPaid((paymentsData ?? []).some((p: any) => p.user_email === user.email && p.status === "paid"));
-      }
-
-      if (g.type === "horse_racing") {
-        const todayEntry2 = (g.daily_meeting_ids ?? []).find((d: any) => d.date === todayStr);
-        const hasTodayEntry = todayEntry2
-          ? (entriesData ?? []).some((e: any) => e.meeting_id === todayEntry2.meeting_id && e.user_email === user.email && e.submitted)
-          : false;
-        const isMemberCheck = (g.member_emails ?? []).includes(user.email);
-        setActiveTab(isMemberCheck && hasTodayEntry ? "mypicks" : "leaderboard");
       }
 
       setLoading(false);
@@ -372,6 +362,9 @@ export default function GroupDetailPage() {
     setNewLmsName(""); setShowCreateLms(false); setCreatingLms(false);
   };
 
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayMeeting = meetings.find(m => m.date === todayStr);
+
   const tabs = [
     { id: "leaderboard", label: "Leaderboard" },
     ...(group.type === "horse_racing" && isMember ? [{ id: "mypicks", label: "📋 My Picks" }] : []),
@@ -455,10 +448,9 @@ export default function GroupDetailPage() {
     if (!firstRaceDeadline || !isMember || group.type !== "horse_racing") return null;
     const msUntil = firstRaceDeadline.getTime() - now.getTime();
     if (msUntil <= 0) return null;
-    const todayStr = now.toISOString().slice(0, 10);
-    const dailyEntry = (group.daily_meeting_ids || []).find((d: any) => d.date === todayStr);
-    const fallbackMeeting = !dailyEntry ? meetings.find(m => m.date === todayStr) : null;
-    const todayMeetingEntry = dailyEntry || (fallbackMeeting ? { meeting_id: fallbackMeeting.id } : null);
+    const todayEntry = (group.daily_meeting_ids || []).find((d: any) => d.date === todayStr);
+    const fallbackMeeting = !todayEntry ? meetings.find(m => m.date === todayStr) : null;
+    const todayMeetingEntry = todayEntry || (fallbackMeeting ? { meeting_id: fallbackMeeting.id } : null);
     if (!todayMeetingEntry) return null;
     const hasEntry = entries.some(e => e.meeting_id === todayMeetingEntry.meeting_id && e.user_email === currentUserEmail && e.submitted);
     if (hasEntry) return null;
@@ -467,7 +459,7 @@ export default function GroupDetailPage() {
     const minsLeft = totalMins % 60;
     const timeStr = hoursLeft > 0 ? `${hoursLeft}h ${minsLeft}m` : `${minsLeft}m`;
     return (
-      <div className="rounded-2xl p-4 border-2 border-red-400 bg-red-50 flex items-start gap-3">
+      <div className="rounded-2xl p-4 border-2 border-red-400 bg-red-50 flex items-start gap-3 mb-4">
         <span className="text-red-500 text-lg flex-shrink-0">⚠️</span>
         <div className="flex-1">
           <p className="text-sm font-bold text-red-700">Deadline approaching — you haven&apos;t picked yet today!</p>
@@ -483,60 +475,69 @@ export default function GroupDetailPage() {
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
-      <div className="max-w-2xl mx-auto px-4 py-10 pb-24">
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-1">
+      <div className="max-w-2xl mx-auto px-4 pb-24">
+
+        {/* Hero Header */}
+        <div className="rounded-b-3xl px-5 pt-6 pb-6 mb-5 -mx-4"
+          style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f4c2a 100%)" }}>
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-green-500" />
-              <span className="text-xs font-semibold tracking-widest text-green-500 uppercase">Group</span>
+              <span className="text-xs font-semibold tracking-widest text-green-400 uppercase">
+                {group.type === "last_man_standing" ? "⚽ Football" : "🏇 Horse Racing"}
+              </span>
             </div>
-            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
+            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
               <statusCfg.Icon className="w-3.5 h-3.5" />
               {statusCfg.label}
             </span>
           </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-3xl font-bold" style={{ color: "var(--text-primary)" }}>{group.name}</h1>
-            {group.type === "horse_racing" && meetings.length > 0 && (() => {
-              const todayStr = new Date().toISOString().slice(0, 10);
-              const todayEntry = (group.daily_meeting_ids || []).find((d: any) => d.date === todayStr);
-              if (todayEntry) return (
-                <Link href={`/enter-tips?meetingId=${todayEntry.meeting_id}&groupId=${group.id}`}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold text-white bg-green-500 hover:bg-green-600 whitespace-nowrap">
-                  🏇 Make your Selections
-                </Link>
-              );
-              return <span className="text-xs text-slate-400 italic">No races scheduled for today, check back tomorrow.</span>;
-            })()}
+
+          <h1 className="text-3xl font-black text-white mb-3 leading-tight">{group.name}</h1>
+
+          <div className="flex items-center gap-3 flex-wrap mb-4">
+            <span className="text-sm text-white/60">
+              👥 {(group.member_emails || []).length} member{(group.member_emails || []).length !== 1 ? "s" : ""}
+            </span>
+            <span className="text-white/30">·</span>
+            <span className="text-sm text-white/60">
+              Code: <span className="font-mono font-bold text-green-400">{group.invite_code}</span>
+            </span>
           </div>
-          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-            {(group.member_emails || []).length} member{(group.member_emails || []).length !== 1 ? "s" : ""}
-            {" · "}Invite code: <span className="font-mono font-bold text-green-500">{group.invite_code}</span>
+
+          <div className="flex gap-2 flex-wrap">
             {isOwner && (
-              <button onClick={handleShareInvite} className="ml-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors">
+              <button onClick={handleShareInvite}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all active:scale-95"
+                style={{ background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)" }}>
+                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white flex-shrink-0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.116 1.529 5.845L.057 23.882l6.235-1.634A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.371l-.359-.214-3.701.97.988-3.61-.234-.37A9.818 9.818 0 0112 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.421-4.398 9.818-9.818 9.818z"/></svg>
                 Share Invite
               </button>
             )}
-          </p>
-          {group.entry_fee_enabled && group.entry_fee > 0 && (
-            <p className="text-sm mt-1 font-semibold text-green-600">Entry fee: {formatAmount(group.entry_fee, group.currency)}</p>
-          )}
-          {group.prize_description && <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>{group.prize_description}</p>}
+
+            {group.type === "horse_racing" && todayMeeting && (
+              <Link href={`/enter-tips?meetingId=${todayMeeting.id}&groupId=${group.id}`}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white active:scale-95 transition-all"
+                style={{ background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)" }}>
+                🐴 Select Horses
+              </Link>
+            )}
+          </div>
+
           {(isOwner || isAdmin) && (
-            <button onClick={() => setShowDeleteModal(true)} className="mt-3 flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">
+            <button onClick={() => setShowDeleteModal(true)} className="mt-3 flex items-center gap-1.5 text-xs font-medium text-white/30 hover:text-white/60 transition-colors">
               <Trash2 className="w-3.5 h-3.5" />
               {groupStatus === "completed" ? "Delete group" : "Archive or delete group"}
             </button>
           )}
           {isMember && !isOwner && (
-            <button onClick={() => setShowLeaveConfirm(true)} className="mt-3 flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-red-500 transition-colors">
+            <button onClick={() => setShowLeaveConfirm(true)} className="mt-3 flex items-center gap-1.5 text-xs font-medium text-white/30 hover:text-white/60 transition-colors">
               <X className="w-3.5 h-3.5" /> Leave group
             </button>
           )}
         </div>
 
         {group.entry_fee_enabled && !hasPaid && (
-          <div className="mb-6 rounded-2xl p-5 border-2 border-green-300 bg-green-50">
+          <div className="mb-5 rounded-2xl p-5 border-2 border-green-300 bg-green-50">
             <div className="flex items-center gap-3">
               <DollarSign className="w-8 h-8 text-green-600 flex-shrink-0" />
               <div className="flex-1">
@@ -548,7 +549,6 @@ export default function GroupDetailPage() {
         )}
 
         {group.type === "horse_racing" && isMember && firstRaceDeadline && now > firstRaceDeadline && (() => {
-          const todayStr = now.toISOString().slice(0, 10);
           const dailyEntry = (group.daily_meeting_ids || []).find((d: any) => d.date === todayStr);
           const fallbackMeeting = !dailyEntry ? meetings.find(m => m.date === todayStr) : null;
           const todayEntry = dailyEntry || (fallbackMeeting ? { meeting_id: fallbackMeeting.id } : null);
@@ -556,9 +556,9 @@ export default function GroupDetailPage() {
           const hasEntry = entries.some(e => e.meeting_id === todayEntry.meeting_id && e.user_email === currentUserEmail && e.submitted);
           if (hasEntry) return null;
           return (
-            <div className="mb-6 rounded-2xl p-4 border-2 border-red-200 bg-red-50 flex items-start gap-3">
+            <div className="mb-5 rounded-2xl p-4 border-2 border-red-200 bg-red-50 flex items-start gap-3">
               <span className="text-red-500 text-lg flex-shrink-0">⚠️</span>
-              <p className="text-sm text-red-700"><strong>You missed today&apos;s deadline</strong> — 0 points recorded. You can pick again tomorrow.</p>
+              <p className="text-sm text-red-700"><strong>You missed today&apos;s deadline</strong> — 0 points recorded.</p>
             </div>
           );
         })()}
@@ -575,14 +575,6 @@ export default function GroupDetailPage() {
             </button>
           ))}
         </div>
-
-        {group.type === "horse_racing" && (
-          <button onClick={() => setActiveTab("meetings")}
-            className="w-full mb-5 py-4 rounded-2xl text-center font-bold text-lg text-white shadow-md"
-            style={{ background: "#f97316" }}>
-            🐴 Select Horses Here
-          </button>
-        )}
 
         {activeTab === "leaderboard" && (
           <div className="space-y-4">
@@ -648,7 +640,7 @@ export default function GroupDetailPage() {
                 )}
                 {(isOwner || isAdmin) && leaderboard.length > 0 && (
                   <button onClick={handleShareLeaderboard}
-                    className="w-full mb-4 py-3 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2"
                     style={{ background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)" }}>
                     <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.116 1.529 5.845L.057 23.882l6.235-1.634A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.371l-.359-.214-3.701.97.988-3.61-.234-.37A9.818 9.818 0 0112 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.421-4.398 9.818-9.818 9.818z"/></svg>
                     Share Leaderboard
@@ -656,7 +648,7 @@ export default function GroupDetailPage() {
                 )}
                 <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div className="px-5 py-4 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
-                    <Trophy className="w-4 h-4 text-green-500" />
+                    <Trophy className="w-4 h-4 text-amber-500" />
                     <h2 className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>
                       {currentMeeting ? `${currentMeeting.name} Leaderboard` : "Overall Leaderboard"}
                     </h2>
@@ -666,15 +658,18 @@ export default function GroupDetailPage() {
                   ) : (
                     <div className="divide-y" style={{ borderColor: "var(--border)" }}>
                       {leaderboard.map((row, i) => (
-                        <div key={row.email} className="flex items-center justify-between px-5 py-3">
+                        <div key={row.email} className={`flex items-center justify-between px-5 py-3 ${row.email === currentUserEmail ? "bg-green-50" : ""}`}>
                           <div className="flex items-center gap-3">
-                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? "bg-green-100 text-green-600" : i === 1 ? "bg-slate-100 text-slate-500" : i === 2 ? "bg-orange-50 text-orange-500" : "bg-slate-50 text-slate-400"}`}>{i + 1}</span>
+                            <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0
+                              ${i === 0 ? "bg-amber-400 text-white" : i === 1 ? "bg-slate-300 text-white" : i === 2 ? "bg-orange-400 text-white" : "bg-slate-100 text-slate-400"}`}>
+                              {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
+                            </span>
                             <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
                               {(isMember || isOwner || isAdmin) ? ((group.member_names || {})[row.email] || row.participantName || row.email.split("@")[0]) : `Player ${i + 1}`}
-                              {row.email === currentUserEmail && <span className="ml-1 text-xs text-green-500">(you)</span>}
+                              {row.email === currentUserEmail && <span className="ml-1 text-xs text-green-500 font-semibold">(you)</span>}
                             </span>
                           </div>
-                          <span className="font-bold text-sm text-green-500">{row.total} pts</span>
+                          <span className="font-black text-base text-green-600">{row.total} pts</span>
                         </div>
                       ))}
                     </div>
@@ -687,11 +682,6 @@ export default function GroupDetailPage() {
 
         {activeTab === "meetings" && (
           <div className="space-y-4">
-            {group.type === "horse_racing" && (group.member_emails || []).length >= 20 && (
-              <div className="rounded-2xl p-4 border-2 border-blue-200" style={{ background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)" }}>
-                <p className="text-sm font-medium text-blue-900">🏇 <strong>Pro tip:</strong> With 20+ players, you can select multiple meetings to run in series.</p>
-              </div>
-            )}
             <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
               <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: "var(--border)" }}>
                 <div className="flex items-center gap-2">
@@ -814,9 +804,6 @@ export default function GroupDetailPage() {
                 </div>
               )}
             </div>
-            <p className="text-xs px-1" style={{ color: "var(--text-muted)" }}>
-              Pick one Premier League team each week. Win = stay in. Draw or loss = you&apos;re out. Each team can only be picked once!
-            </p>
           </div>
         )}
 
@@ -824,8 +811,45 @@ export default function GroupDetailPage() {
           <GroupMembersTab group={group} payments={payments} currentUserEmail={currentUserEmail} onGroupUpdate={u => setGroup(g => g ? { ...g, ...u } : g)} />
         )}
 
-        <div className="text-center px-4 py-6 text-xs" style={{ color: "var(--text-muted)" }}>
-          This app is for entertainment purposes only. Please compete responsibly. 18+ only.{" "}
+        {activeTab === "mypicks" && (
+          <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+            <div className="px-5 py-4 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
+              <Trophy className="w-4 h-4 text-amber-500" />
+              <h2 className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>My Picks</h2>
+            </div>
+            <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+              {entries.filter(e => e.user_email === currentUserEmail).length === 0 ? (
+                <div className="px-5 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>No picks submitted yet.</div>
+              ) : (
+                entries.filter(e => e.user_email === currentUserEmail).map(entry => {
+                  const meeting = meetings.find(m => m.id === entry.meeting_id);
+                  return (
+                    <div key={entry.id} className="px-5 py-4">
+                      <p className="font-semibold text-sm mb-2" style={{ color: "var(--text-primary)" }}>{meeting?.name || "Meeting"}</p>
+                      <div className="space-y-1">
+                        {(entry.selections || []).map((sel: any) => (
+                          <div key={sel.race_id} className="flex items-center justify-between text-xs">
+                            <span style={{ color: "var(--text-muted)" }}>Race {sel.race_number}</span>
+                            <span className="font-medium" style={{ color: "var(--text-primary)" }}>
+                              {sel.horse_name}
+                              {sel.is_best_chance && <span className="ml-1 text-amber-500">★</span>}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      {entry.total_points > 0 && (
+                        <p className="text-xs font-bold text-green-600 mt-2">{entry.total_points} pts</p>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="text-center px-4 py-3 text-xs rounded-2xl mt-5" style={{ color: "var(--text-muted)", background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+          For entertainment only · 18+ ·{" "}
           <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-70">begambleaware.org</a>
         </div>
       </div>
