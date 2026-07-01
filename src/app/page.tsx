@@ -40,7 +40,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col pb-24" style={{ background: "var(--bg)" }}>
-      <div className="flex-1 flex flex-col items-center justify-center px-5 py-8">
+      <div className="flex-1 flex flex-col items-center px-5 py-6">
         <div className="w-full max-w-lg">
 
           {myGroups.length > 0 && (
