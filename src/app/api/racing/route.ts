@@ -8,23 +8,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing credentials" }, { status: 400 });
     }
 
-    const basicAuth = "Basic " + Buffer.from(`${username}:${password}`).toString("base64");
+    const credentials = `${username.trim()}:${password.trim()}`;
+    const basicAuth = "Basic " + Buffer.from(credentials).toString("base64");
 
-    const res = await fetch(`https://api.theracingapi.com/v1/${endpoint}`, {
+    const url = `https://api.theracingapi.com/v1/${endpoint}`;
+
+    const res = await fetch(url, {
+      method: "GET",
       headers: {
-        Authorization: basicAuth,
-        "Content-Type": "application/json",
+        "Authorization": basicAuth,
+        "Accept": "application/json",
       },
     });
 
+    const responseText = await res.text();
+
     if (!res.ok) {
       return NextResponse.json(
-        { error: `Racing API error: ${res.status} ${res.statusText}` },
+        { error: `Racing API error: ${res.status} ${res.statusText}`, detail: responseText },
         { status: res.status }
       );
     }
 
-    const data = await res.json();
+    const data = JSON.parse(responseText);
     return NextResponse.json(data);
 
   } catch (error: any) {
