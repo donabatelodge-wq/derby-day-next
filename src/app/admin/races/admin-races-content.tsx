@@ -15,6 +15,19 @@ const EMPTY_FORM = {
   distance: "", race_time: "", horses: [{ number: 1, name: "", jockey: "", trainer: "" }]
 };
 
+async function racingApiCall(endpoint: string, username: string, password: string) {
+  const res = await fetch("/api/racing", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ endpoint, username, password }),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || `API error ${res.status}`);
+  }
+  return res.json();
+}
+
 export default function AdminRacesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -39,8 +52,6 @@ export default function AdminRacesContent() {
   const [nonRunnerReplacement, setNonRunnerReplacement] = useState("");
   const [nonRunnerEntries, setNonRunnerEntries] = useState<any[]>([]);
   const [applyingNonRunner, setApplyingNonRunner] = useState(false);
-
-  // API credentials stored in state (not in DB — user enters each session)
   const [apiUsername, setApiUsername] = useState("");
   const [apiPassword, setApiPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -50,13 +61,11 @@ export default function AdminRacesContent() {
   const [apiImporting, setApiImporting] = useState(false);
   const [apiImportResult, setApiImportResult] = useState<any>(null);
   const [apiImportError, setApiImportError] = useState("");
-
   const [fetchingResults, setFetchingResults] = useState(false);
   const [fetchResultsMsg, setFetchResultsMsg] = useState("");
   const [showResultsForm, setShowResultsForm] = useState(false);
   const [resultsUsername, setResultsUsername] = useState("");
   const [resultsPassword, setResultsPassword] = useState("");
-
   const [joinDeadline, setJoinDeadline] = useState("");
   const [editingDeadline, setEditingDeadline] = useState(false);
   const [savingDeadline, setSavingDeadline] = useState(false);
@@ -220,15 +229,12 @@ export default function AdminRacesContent() {
     setApiImportError("");
     setApiImportResult(null);
     try {
-      const basicAuth = "Basic " + btoa(`${apiUsername}:${apiPassword}`);
-      const res = await fetch(`https://api.theracingapi.com/v1/racecards/standard?date=${apiDate}`, { headers: { Authorization: basicAuth } });
-      if (!res.ok) { setApiImportError(`Racing API error: ${res.status} — check your credentials.`); setApiImporting(false); return; }
-      const data = await res.json();
+      const data = await racingApiCall(`racecards/standard?date=${apiDate}`, apiUsername, apiPassword);
       const allRaces = data.racecards || [];
       const courseRaces = allRaces.filter((r: any) => r.course.toLowerCase().startsWith(apiCourse.toLowerCase().trim()));
       if (courseRaces.length === 0) {
         const available = [...new Set(allRaces.map((r: any) => r.course))].join(", ");
-        setApiImportError(`No races found for "${apiCourse}". Available courses today: ${available}`);
+        setApiImportError(`No races found for "${apiCourse}". Available today: ${available || "none"}`);
         setApiImporting(false); return;
       }
       await supabase.from("races").delete().eq("meeting_id", meetingId!);
@@ -263,17 +269,12 @@ export default function AdminRacesContent() {
     setFetchingResults(true);
     setFetchResultsMsg("");
     try {
-      const basicAuth = "Basic " + btoa(`${resultsUsername}:${resultsPassword}`);
       const { data: raceList } = await supabase.from("races").select("*").eq("meeting_id", meetingId!);
+      const course = encodeURIComponent(meeting?.venue || meeting?.name || "");
+      const data = await racingApiCall(`results?date=${meeting?.date}&course=${course}`, resultsUsername, resultsPassword);
       let resultsApplied = 0;
       for (const race of raceList ?? []) {
         if (!race.race_time) continue;
-        const res = await fetch(
-          `https://api.theracingapi.com/v1/results?date=${meeting?.date}&course=${encodeURIComponent(meeting?.venue || meeting?.name || "")}`,
-          { headers: { Authorization: basicAuth } }
-        );
-        if (!res.ok) continue;
-        const data = await res.json();
         const matchedRace = (data.results || []).find((r: any) => r.off_time === race.race_time);
         if (!matchedRace) continue;
         const runners = matchedRace.runners || [];
@@ -300,21 +301,17 @@ export default function AdminRacesContent() {
       <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
     </div>
   );
-
   if (!isAdmin) return null;
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <div className="max-w-2xl mx-auto px-4 py-8">
-
-        {/* Header */}
         <div className="mb-6">
           <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "var(--text-muted)" }}>Admin · Races</span>
           <h1 className="text-2xl font-bold mt-0.5" style={{ color: "var(--text-primary)" }}>{meeting?.name || "Meeting"}</h1>
           {meeting?.date && <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>{format(new Date(meeting.date), "EEEE, d MMMM yyyy")}</p>}
         </div>
 
-        {/* Join Deadline */}
         <div className="rounded-2xl p-5 border mb-5" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
           <div className="flex items-center gap-2 mb-2">
             <Lock className="w-4 h-4 text-amber-500" />
@@ -343,7 +340,6 @@ export default function AdminRacesContent() {
           )}
         </div>
 
-        {/* Racing API Import */}
         <div className="rounded-2xl p-5 border mb-5" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
@@ -355,8 +351,7 @@ export default function AdminRacesContent() {
               {showApiImport ? "Cancel" : "Import"}
             </button>
           </div>
-          <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>Fetches runners for a specific course and date. Replaces any existing races.</p>
-
+          <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>Fetches runners for a specific course and date. Replaces existing races.</p>
           {showApiImport && (
             <div className="space-y-3 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
               <div className="grid grid-cols-2 gap-3">
@@ -397,7 +392,6 @@ export default function AdminRacesContent() {
           )}
         </div>
 
-        {/* Auto Fetch Results */}
         <div className="rounded-2xl p-5 border mb-5" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
@@ -410,13 +404,11 @@ export default function AdminRacesContent() {
             </button>
           </div>
           <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>Fetches official results and recalculates all scores automatically.</p>
-
           {fetchResultsMsg && (
             <p className="text-xs rounded-lg px-3 py-2 mb-3" style={{ background: "var(--bg)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}>
               {fetchResultsMsg}
             </p>
           )}
-
           {showResultsForm && (
             <div className="space-y-3 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
               <div>
@@ -432,13 +424,12 @@ export default function AdminRacesContent() {
               <button onClick={handleFetchResults} disabled={!resultsUsername.trim() || !resultsPassword.trim() || fetchingResults}
                 className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
                 <RefreshCw className={`w-4 h-4 ${fetchingResults ? "animate-spin" : ""}`} />
-                {fetchingResults ? "Fetching Results..." : "Fetch Results & Auto-Score"}
+                {fetchingResults ? "Fetching..." : "Fetch Results & Auto-Score"}
               </button>
             </div>
           )}
         </div>
 
-        {/* Add Race */}
         <div className="flex items-center justify-between mb-4">
           <p className="font-semibold" style={{ color: "var(--text-primary)" }}>Races ({races.length})</p>
           <button onClick={() => setShowForm(!showForm)}
@@ -500,7 +491,6 @@ export default function AdminRacesContent() {
           </div>
         )}
 
-        {/* Race List */}
         {races.length === 0 ? (
           <div className="text-center py-16" style={{ color: "var(--text-muted)" }}>
             <Trophy className="w-8 h-8 mx-auto mb-3 opacity-40" />
@@ -535,7 +525,6 @@ export default function AdminRacesContent() {
                     </button>
                   </div>
                 </div>
-
                 {expanded[race.id] && (
                   <div className="px-5 pb-5 border-t pt-4" style={{ borderColor: "var(--border)" }}>
                     {editingRace === race.id ? (
@@ -607,7 +596,6 @@ export default function AdminRacesContent() {
                         )}
                         <div className="pt-4 border-t" style={{ borderColor: "var(--border)" }}>
                           <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
-                            <Trophy className="w-3.5 h-3.5 inline mr-1" />
                             Official Results {race.result_entered && <span className="text-emerald-500 normal-case font-normal">(entered)</span>}
                           </p>
                           <div className="grid grid-cols-3 gap-2 mb-3">
@@ -641,7 +629,6 @@ export default function AdminRacesContent() {
         )}
       </div>
 
-      {/* Non-Runner Modal */}
       {nonRunnerPanel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.85)" }}>
           <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-2xl bg-white">
@@ -659,13 +646,11 @@ export default function AdminRacesContent() {
             </div>
             <div className="p-6 space-y-5">
               {nonRunnerEntries.length === 0 ? (
-                <div className="text-center py-4">
-                  <p className="text-sm font-medium text-slate-800">No entries have selected this horse.</p>
-                </div>
+                <p className="text-sm text-center text-slate-600">No entries selected this horse.</p>
               ) : (
                 <>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider mb-2 text-slate-500">Affected Entries ({nonRunnerEntries.length})</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider mb-2 text-slate-500">Affected ({nonRunnerEntries.length})</p>
                     <div className="rounded-xl border border-slate-200 divide-y divide-slate-100 overflow-hidden">
                       {nonRunnerEntries.map((e: any) => (
                         <div key={e.id} className="text-sm px-3 py-2 bg-slate-50 text-slate-700">{e.participant_name}</div>
@@ -676,7 +661,7 @@ export default function AdminRacesContent() {
                     <p className="text-xs font-semibold uppercase tracking-wider mb-2 text-slate-500">Replace With</p>
                     <select value={nonRunnerReplacement} onChange={e => setNonRunnerReplacement(e.target.value)}
                       className="w-full h-10 rounded-xl border border-slate-200 px-3 text-sm bg-white">
-                      <option value="">— Select a replacement —</option>
+                      <option value="">— Select replacement —</option>
                       {(races.find(r => r.id === nonRunnerPanel.raceId)?.horses || [])
                         .filter((h: any) => h.name !== nonRunnerPanel.horseName)
                         .map((h: any) => <option key={h.name} value={h.name}>{h.number}. {h.name}</option>)}
