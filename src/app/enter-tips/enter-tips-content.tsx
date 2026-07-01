@@ -159,7 +159,7 @@ export default function EnterTipsContent() {
     };
     const msg = messages[meeting.status] || { title: "Unavailable", body: "Entries are not available for this meeting." };
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4 text-center" style={{ background: "var(--bg)" }}>
+      <div className="min-h-screen flex flex-col items-center px-4 pt-8 pb-24" style={{ background: "var(--bg)" }}>
         <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
           <Trophy className="w-8 h-8 text-slate-400" />
         </div>
@@ -214,7 +214,7 @@ export default function EnterTipsContent() {
 
   if (!nameSubmitted) return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: "var(--bg)" }}>
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-sm mt-4">
         {meetingDate && firstRaceTime && (
           <RaceEntryDeadlineClock meetingDate={meetingDate} firstRaceTime={firstRaceTime} />
         )}
