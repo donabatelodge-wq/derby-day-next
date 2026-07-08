@@ -38,13 +38,15 @@ export function BottomNav() {
       style={{
         background: "var(--bg-card)",
         borderTop: "1px solid var(--border)",
-        paddingBottom: "env(safe-area-inset-bottom)",
+        paddingBottom: "var(--safe-bottom)",
+        paddingLeft: "var(--safe-left)",
+        paddingRight: "var(--safe-right)",
       }}>
       {tabs.map(({ label, href, icon: Icon }) => {
         const active = isActive(href);
         return (
           <button key={href} onClick={() => router.push(href)}
-            className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 min-h-[52px] transition-colors"
+            className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 min-h-[52px] transition-colors active:opacity-60"
             style={{ color: active ? "#22c55e" : "var(--text-muted)", background: "none", border: "none" }}>
             <Icon className="w-5 h-5" />
             <span className="text-xs font-medium">{label}</span>
