@@ -478,7 +478,7 @@ export default function GroupDetailPage() {
       <div className="max-w-2xl mx-auto px-4 pb-24">
 
         {/* Hero Header */}
-        <div className="rounded-b-3xl px-5 pt-6 pb-6 mb-5 -mx-4"
+        <div className="rounded-b-3xl px-6 pt-6 pb-6 mb-5 -mx-4"
           style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f4c2a 100%)" }}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -660,10 +660,10 @@ export default function GroupDetailPage() {
                       {leaderboard.map((row, i) => (
                         <div key={row.email} className={`flex items-center justify-between px-5 py-3 ${row.email === currentUserEmail ? "bg-green-50" : ""}`}>
                           <div className="flex items-center gap-3">
-                            <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0
-                              ${i === 0 ? "bg-amber-400 text-white" : i === 1 ? "bg-slate-300 text-white" : i === 2 ? "bg-orange-400 text-white" : "bg-slate-100 text-slate-400"}`}>
-                              {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
-                            </span>
+                            <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0
+  ${i === 0 ? "bg-amber-400 text-white" : i === 1 ? "bg-slate-300 text-white" : i === 2 ? "bg-orange-300 text-white" : "bg-slate-100 text-slate-400"}`}>
+  {i + 1}
+</span>
                             <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
                               {(isMember || isOwner || isAdmin) ? ((group.member_names || {})[row.email] || row.participantName || row.email.split("@")[0]) : `Player ${i + 1}`}
                               {row.email === currentUserEmail && <span className="ml-1 text-xs text-green-500 font-semibold">(you)</span>}
