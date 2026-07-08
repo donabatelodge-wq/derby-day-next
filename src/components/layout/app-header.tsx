@@ -52,11 +52,13 @@ export function AppHeader() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 flex items-center h-14 px-4"
+    <header className="sticky top-0 z-50 flex items-center h-14"
       style={{
         background: "var(--bg-card)",
         borderBottom: "1px solid var(--border)",
-        paddingTop: "env(safe-area-inset-top)",
+        paddingTop: "var(--safe-top)",
+        paddingLeft: "calc(1rem + var(--safe-left))",
+        paddingRight: "calc(1rem + var(--safe-right))",
       }}>
       <div className="w-full max-w-2xl mx-auto flex items-center justify-between">
         {isRoot ? (
@@ -65,7 +67,7 @@ export function AppHeader() {
           </span>
         ) : (
           <button onClick={() => router.back()}
-            className="flex items-center gap-1 text-sm font-medium"
+            className="flex items-center gap-1 text-sm font-medium active:opacity-60"
             style={{ color: "var(--text-secondary)" }}>
             <ChevronLeft className="w-5 h-5" />
             Back
@@ -74,7 +76,7 @@ export function AppHeader() {
 
         <div className="relative" ref={menuRef}>
           <button onClick={() => setMenuOpen(o => !o)}
-            className="w-9 h-9 flex items-center justify-center rounded-xl transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-xl transition-colors active:opacity-60"
             style={{ background: "var(--bg-card)", border: "1.5px solid var(--border)", boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}>
             {menuOpen
               ? <X className="w-5 h-5" style={{ color: "var(--text-primary)" }} />
@@ -87,14 +89,14 @@ export function AppHeader() {
               <div className="py-1">
                 {menuItems.map(({ label, href, icon: Icon }) => (
                   <button key={href} onClick={() => { router.push(href); setMenuOpen(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors text-left">
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors text-left active:bg-slate-100">
                     <Icon className="w-4 h-4 text-slate-400" />
                     {label}
                   </button>
                 ))}
                 <div className="border-t border-slate-100 mt-1 pt-1">
                   <button onClick={() => { handleSignOut(); setMenuOpen(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors text-left">
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors text-left active:bg-slate-100">
                     <LogOut className="w-4 h-4 text-slate-400" />
                     Sign out
                   </button>
