@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { Toaster } from "sonner";
 import { AppHeader } from "@/components/layout/app-header";
@@ -15,9 +15,18 @@ export const metadata: Metadata = {
   description: "Horse racing picks and Last Man Standing competitions",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Derby Day",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#0f172a",
 };
 
 export default function RootLayout({
@@ -27,7 +36,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geist.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col overscroll-none">
         <AppHeader />
         <main className="flex-1" style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom))" }}>
           {children}
