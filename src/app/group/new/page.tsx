@@ -167,7 +167,7 @@ export default function NewGroupPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col">
+      <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col justify-center">
 
         {/* Step 1 — Type */}
         {step === 1 && (
