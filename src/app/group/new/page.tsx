@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ChevronRight, ChevronLeft, Check, X } from "lucide-react";
@@ -30,7 +30,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export default function NewGroupPage() {
+function NewGroupPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -368,5 +368,13 @@ export default function NewGroupPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function NewGroupPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewGroupPageInner />
+    </Suspense>
   );
 }
