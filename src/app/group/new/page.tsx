@@ -30,6 +30,16 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function InlineContinueButton({ disabled, onClick }: { disabled: boolean; onClick: () => void }) {
+  return (
+    <button onClick={onClick} disabled={disabled}
+      className="w-full h-14 rounded-2xl text-white font-black text-base flex items-center justify-center gap-2 disabled:opacity-40 transition-all active:scale-95 mt-6"
+      style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
+      Continue <ChevronRight className="w-5 h-5" />
+    </button>
+  );
+}
+
 function NewGroupPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -209,61 +219,67 @@ function NewGroupPageInner() {
 
         {/* Step 2a — Horse Racing meetings */}
         {step === 2 && groupType === "horse_racing" && (
-          <div className="space-y-3">
+          <div>
             <p className="text-slate-500 text-sm mb-4">Select the meeting(s) to include in this series.</p>
-            {loadingMeetings ? (
-              <div className="flex items-center justify-center py-16">
-                <div className="w-8 h-8 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : meetings.length === 0 ? (
-              <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
-                <p className="text-slate-500 text-sm">No upcoming meetings available.</p>
-                <p className="text-slate-400 text-xs mt-1">Ask an admin to add meetings first.</p>
-              </div>
-            ) : (
-              meetings.map(m => {
-                const selected = selectedMeetingIds.includes(m.id);
-                return (
-                  <button key={m.id} onClick={() => toggleMeeting(m.id)}
-                    className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-95 shadow-sm"
-                    style={{
-                      borderColor: selected ? "#22c55e" : "transparent",
-                      background: selected ? "#f0fdf4" : "#ffffff"
-                    }}>
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${selected ? "bg-green-500 border-green-500" : "border-slate-300"}`}>
-                      {selected && <Check className="w-3.5 h-3.5 text-white" />}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-slate-900">{m.name}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">{m.venue} · {m.date}</p>
-                    </div>
-                  </button>
-                );
-              })
-            )}
-            {selectedMeetingIds.length > 0 && (
-              <p className="text-xs font-semibold text-green-600 text-center">
-                {selectedMeetingIds.length} meeting{selectedMeetingIds.length > 1 ? "s" : ""} selected
-              </p>
-            )}
+            <div className="space-y-4">
+              {loadingMeetings ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="w-8 h-8 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : meetings.length === 0 ? (
+                <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
+                  <p className="text-slate-500 text-sm">No upcoming meetings available.</p>
+                  <p className="text-slate-400 text-xs mt-1">Ask an admin to add meetings first.</p>
+                </div>
+              ) : (
+                meetings.map(m => {
+                  const selected = selectedMeetingIds.includes(m.id);
+                  return (
+                    <button key={m.id} onClick={() => toggleMeeting(m.id)}
+                      className="w-full flex items-center gap-4 p-6 rounded-2xl border-2 text-left transition-all active:scale-95 shadow-sm"
+                      style={{
+                        borderColor: selected ? "#22c55e" : "transparent",
+                        background: selected ? "#f0fdf4" : "#ffffff"
+                      }}>
+                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${selected ? "bg-green-500 border-green-500" : "border-slate-300"}`}>
+                        {selected && <Check className="w-4.5 h-4.5 text-white" />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold text-slate-900 text-lg">{m.name}</p>
+                        <p className="text-sm text-slate-400 mt-0.5">{m.venue} · {m.date}</p>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+              {selectedMeetingIds.length > 0 && (
+                <p className="text-xs font-semibold text-green-600 text-center">
+                  {selectedMeetingIds.length} meeting{selectedMeetingIds.length > 1 ? "s" : ""} selected
+                </p>
+              )}
+            </div>
+            <InlineContinueButton disabled={!canGoNext()} onClick={() => setStep(s => s + 1)} />
           </div>
         )}
 
         {/* Step 2b — LMS league */}
         {step === 2 && groupType === "last_man_standing" && (
-          <div className="space-y-2">
+          <div>
             <p className="text-slate-500 text-sm mb-4">Select the league your competition will be based on.</p>
-            {["Premier League 🏴󠁧󠁢󠁥󠁮󠁧󠁿", "La Liga 🇪🇸", "Bundesliga 🇩🇪", "Serie A 🇮🇹", "Ligue 1 🇫🇷", "Eredivisie 🇳🇱", "AFL 🇦🇺", "NRL 🇦🇺", "NFL 🇺🇸"].map(league => (
-  <button key={league} onClick={() => setSelectedLeague(league)}
-    className="w-full flex items-center justify-between px-5 py-4 rounded-2xl border-2 text-left transition-all active:scale-95 shadow-sm"
-    style={{
-      borderColor: selectedLeague === league ? "#a855f7" : "transparent",
-      background: selectedLeague === league ? "#faf5ff" : "#ffffff"
-    }}>
-    <span className="font-semibold text-slate-900 text-base">{league}</span>
-    {selectedLeague === league && <Check className="w-5 h-5 text-purple-500" />}
-  </button>
-))}
+            <div className="space-y-3">
+              {["Premier League 🏴󠁧󠁢󠁥󠁮󠁧󠁿", "La Liga 🇪🇸", "Bundesliga 🇩🇪", "Serie A 🇮🇹", "Ligue 1 🇫🇷", "Eredivisie 🇳🇱", "AFL 🇦🇺", "NRL 🇦🇺", "NFL 🇺🇸"].map(league => (
+                <button key={league} onClick={() => setSelectedLeague(league)}
+                  className="w-full flex items-center justify-between px-6 py-5 rounded-2xl border-2 text-left transition-all active:scale-95 shadow-sm"
+                  style={{
+                    borderColor: selectedLeague === league ? "#a855f7" : "transparent",
+                    background: selectedLeague === league ? "#faf5ff" : "#ffffff"
+                  }}>
+                  <span className="font-bold text-slate-900 text-lg">{league}</span>
+                  {selectedLeague === league && <Check className="w-6 h-6 text-purple-500" />}
+                </button>
+              ))}
+            </div>
+            <InlineContinueButton disabled={!canGoNext()} onClick={() => setStep(s => s + 1)} />
           </div>
         )}
 
@@ -350,23 +366,25 @@ function NewGroupPageInner() {
         )}
       </div>
 
-      {/* Footer button */}
-      <div className="px-4 pt-3 pb-6 bg-white border-t border-slate-100"
-        style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
-        {step < TOTAL_STEPS ? (
-          <button onClick={() => setStep(s => s + 1)} disabled={!canGoNext()}
-            className="w-full h-14 rounded-2xl text-white font-black text-base flex items-center justify-center gap-2 disabled:opacity-40 transition-all active:scale-95"
-            style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
-            Continue <ChevronRight className="w-5 h-5" />
-          </button>
-        ) : (
-          <button onClick={handleCreate} disabled={saving}
-            className="w-full h-14 rounded-2xl text-white font-black text-base disabled:opacity-40 transition-all active:scale-95"
-            style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
-            {saving ? "Creating..." : "Create Group 🎉"}
-          </button>
-        )}
-      </div>
+      {/* Footer button — hidden on step 2, since that step has its own inline Continue */}
+      {step !== 2 && (
+        <div className="px-4 pt-3 pb-6 bg-white border-t border-slate-100"
+          style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
+          {step < TOTAL_STEPS ? (
+            <button onClick={() => setStep(s => s + 1)} disabled={!canGoNext()}
+              className="w-full h-14 rounded-2xl text-white font-black text-base flex items-center justify-center gap-2 disabled:opacity-40 transition-all active:scale-95"
+              style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
+              Continue <ChevronRight className="w-5 h-5" />
+            </button>
+          ) : (
+            <button onClick={handleCreate} disabled={saving}
+              className="w-full h-14 rounded-2xl text-white font-black text-base disabled:opacity-40 transition-all active:scale-95"
+              style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
+              {saving ? "Creating..." : "Create Group 🎉"}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
