@@ -29,7 +29,7 @@ export function HomeButtons({ content, isAdmin, userEmail }: Props) {
     }
   };
 
-  const tileClass = "w-full py-9 px-5 font-black rounded-[28px] text-center shadow-md text-xl leading-snug flex flex-col items-center justify-center gap-2 active:scale-95 transition-transform";
+  const tileClass = "w-full min-h-[168px] px-6 font-black rounded-[28px] text-center shadow-md text-xl leading-snug flex flex-col items-center justify-center gap-2 active:scale-95 transition-transform";
 
   return (
     <div className="flex flex-col items-center gap-4 w-full">
