@@ -64,7 +64,7 @@ export function HomeButtons({ content, isAdmin, userEmail }: Props) {
       )}
 
       {show("show_racing_competition_button", true) && (
-        <button onClick={() => router.push("/group/new")}
+        <button onClick={() => router.push("/group/new?type=horse_racing")}
           className={`${tileClass} text-white`}
           style={{ background: "#22c55e" }}>
           {content?.button_racing_competition_label || "Start A Racing Competition 🏇"}
@@ -72,7 +72,7 @@ export function HomeButtons({ content, isAdmin, userEmail }: Props) {
       )}
 
       {show("show_lms_button") && (
-        <button onClick={() => router.push("/group/new")}
+        <button onClick={() => router.push("/group/new?type=last_man_standing")}
           className={`${tileClass} text-white`}
           style={{ background: "#9333ea" }}>
           {content?.button_football_competition_label || "Start A Football Competition ⚽"}
