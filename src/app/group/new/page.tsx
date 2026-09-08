@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ChevronRight, ChevronLeft, Check, X } from "lucide-react";
 import { toast } from "sonner";
@@ -32,11 +32,16 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 
 export default function NewGroupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
+  const presetType = searchParams.get("type");
+  const validPresetType = presetType === "horse_racing" || presetType === "last_man_standing" ? presetType : null;
+
   const [user, setUser] = useState<any>(null);
-  const [step, setStep] = useState(1);
-  const [groupType, setGroupType] = useState<string | null>(null);
+  const [step, setStep] = useState(validPresetType ? 2 : 1);
+  const [skippedTypeStep] = useState(!!validPresetType);
+  const [groupType, setGroupType] = useState<string | null>(validPresetType);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [selectedMeetingIds, setSelectedMeetingIds] = useState<string[]>([]);
@@ -79,6 +84,14 @@ export default function NewGroupPage() {
     if (step === 3) return groupName.trim().length > 0 && displayName.trim().length > 0 && pin.length === 4;
     if (step === 4) return !!maxPlayers;
     return true;
+  };
+
+  const handleBack = () => {
+    if (step === 2 && skippedTypeStep) {
+      router.back();
+      return;
+    }
+    setStep(s => s - 1);
   };
 
   const handleCreate = async () => {
@@ -140,7 +153,7 @@ export default function NewGroupPage() {
         style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f4c2a 100%)" }}>
         <div className="flex items-center gap-3">
           {step > 1 && (
-            <button onClick={() => setStep(s => s - 1)}
+            <button onClick={handleBack}
               className="w-9 h-9 flex items-center justify-center rounded-xl"
               style={{ background: "rgba(255,255,255,0.1)" }}>
               <ChevronLeft className="w-5 h-5 text-white" />
