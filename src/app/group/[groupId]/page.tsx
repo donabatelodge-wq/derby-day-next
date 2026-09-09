@@ -103,13 +103,13 @@ function GroupMembersTab({ group, payments, currentUserEmail, onGroupUpdate }: {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
-        <div className="px-5 py-4 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
-          <Users className="w-4 h-4 text-green-500" />
-          <h2 className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>Members ({members.length}/{group.max_players || 20})</h2>
+      <div className="rounded-3xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+        <div className="px-6 py-5 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
+          <Users className="w-5 h-5 text-green-500" />
+          <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>Members ({members.length}/{group.max_players || 20})</h2>
         </div>
         {members.length === 0 ? (
-          <div className="px-5 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>No members yet.</div>
+          <div className="px-6 py-10 text-center text-sm" style={{ color: "var(--text-muted)" }}>No members yet.</div>
         ) : (
           <div className="divide-y" style={{ borderColor: "var(--border)" }}>
             {members.map(email => {
@@ -118,21 +118,21 @@ function GroupMembersTab({ group, payments, currentUserEmail, onGroupUpdate }: {
               const hasPaid = group.entry_fee_enabled ? paidEmails.has(email) : null;
               const isMe = email === currentUserEmail;
               return (
-                <div key={email} className="px-5 py-3">
+                <div key={email} className="px-6 py-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-slate-500">{name.charAt(0).toUpperCase()}</span>
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+                        <span className="text-sm font-bold text-slate-500">{name.charAt(0).toUpperCase()}</span>
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{name}</p>
+                          <p className="text-base font-medium" style={{ color: "var(--text-primary)" }}>{name}</p>
                           {isOwner && <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">Owner</span>}
                           {isMe && !isOwner && <span className="text-xs text-green-500 font-semibold">(you)</span>}
                           {hasPaid === true && <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">Paid</span>}
                           {hasPaid === false && <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-50 text-red-500 font-semibold">Unpaid</span>}
                         </div>
-                        <p className="text-xs text-slate-400">{email}</p>
+                        <p className="text-sm text-slate-400">{email}</p>
                       </div>
                     </div>
                     {!isOwner && !isMe && (
@@ -146,7 +146,7 @@ function GroupMembersTab({ group, payments, currentUserEmail, onGroupUpdate }: {
                         </div>
                       ) : (
                         <button onClick={() => setConfirmRemove(email)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-400 transition-colors">
-                          <UserMinus className="w-4 h-4" />
+                          <UserMinus className="w-5 h-5" />
                         </button>
                       )
                     )}
@@ -390,47 +390,47 @@ export default function GroupDetailPage() {
     const alive = participants.filter(p => p.status === "alive").sort((a, b) => b.weeksAlive - a.weeksAlive);
     const eliminated = participants.filter(p => p.status === "eliminated").sort((a, b) => b.weeksAlive - a.weeksAlive);
     return (
-      <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+      <div className="rounded-3xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
         {comp && (
-          <div className="px-5 py-3 border-b flex items-center" style={{ borderColor: "var(--border)", background: "rgba(168,85,247,0.05)" }}>
+          <div className="px-6 py-4 border-b flex items-center" style={{ borderColor: "var(--border)", background: "rgba(168,85,247,0.05)" }}>
             <Swords className="w-4 h-4 text-purple-500 mr-2" />
             <span className="text-xs font-semibold text-purple-600 uppercase tracking-wide">{comp.name} · Week {comp.current_week}</span>
           </div>
         )}
         {alive.length > 0 && (
           <>
-            <div className="px-5 py-2 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
+            <div className="px-6 py-3 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
               <Trophy className="w-3.5 h-3.5 text-purple-400" />
               <span className="text-xs font-semibold text-purple-500 uppercase tracking-wide">Still In ({alive.length})</span>
             </div>
             {alive.map((p, i) => (
-              <div key={p.email} className={`flex items-center justify-between px-5 py-3 border-b ${p.email === currentUserEmail ? "bg-purple-50" : ""}`} style={{ borderColor: "var(--border)" }}>
+              <div key={p.email} className={`flex items-center justify-between px-6 py-4 border-b ${p.email === currentUserEmail ? "bg-purple-50" : ""}`} style={{ borderColor: "var(--border)" }}>
                 <div className="flex items-center gap-3">
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${i === 0 ? "bg-amber-100 text-amber-600" : i === 1 ? "bg-slate-100 text-slate-500" : "bg-slate-50 text-slate-400"}`}>{i + 1}</span>
+                  <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${i === 0 ? "bg-amber-100 text-amber-600" : i === 1 ? "bg-slate-100 text-slate-500" : "bg-slate-50 text-slate-400"}`}>{i + 1}</span>
                   <div>
-                    <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{p.name}{p.email === currentUserEmail && <span className="ml-1 text-xs text-purple-500">(you)</span>}</p>
-                    {p.currentPick ? <p className="text-xs" style={{ color: "var(--text-muted)" }}>This week: {p.currentPick}</p> : <p className="text-xs text-amber-500">⚠ No pick yet</p>}
+                    <p className="text-base font-medium" style={{ color: "var(--text-primary)" }}>{p.name}{p.email === currentUserEmail && <span className="ml-1 text-xs text-purple-500">(you)</span>}</p>
+                    {p.currentPick ? <p className="text-sm" style={{ color: "var(--text-muted)" }}>This week: {p.currentPick}</p> : <p className="text-sm text-amber-500">⚠ No pick yet</p>}
                   </div>
                 </div>
-                <span className="text-sm font-bold text-purple-600">{p.weeksAlive}w</span>
+                <span className="text-base font-bold text-purple-600">{p.weeksAlive}w</span>
               </div>
             ))}
           </>
         )}
         {eliminated.length > 0 && (
           <>
-            <div className="px-5 py-2 border-b border-t flex items-center gap-2" style={{ borderColor: "var(--border)", background: "rgba(239,68,68,0.04)" }}>
+            <div className="px-6 py-3 border-b border-t flex items-center gap-2" style={{ borderColor: "var(--border)", background: "rgba(239,68,68,0.04)" }}>
               <X className="w-3.5 h-3.5 text-red-400" />
               <span className="text-xs font-semibold text-red-400 uppercase tracking-wide">Eliminated ({eliminated.length})</span>
             </div>
             {eliminated.map(p => (
-              <div key={p.email} className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+              <div key={p.email} className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--border)" }}>
                 <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-red-50"><X className="w-3 h-3 text-red-400" /></span>
-                  <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{p.name}{p.email === currentUserEmail && <span className="ml-1 text-xs text-red-400">(you)</span>}</p>
+                  <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-red-50"><X className="w-4 h-4 text-red-400" /></span>
+                  <p className="text-base font-medium" style={{ color: "var(--text-primary)" }}>{p.name}{p.email === currentUserEmail && <span className="ml-1 text-xs text-red-400">(you)</span>}</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-sm font-bold text-slate-400">{p.weeksAlive}w</span>
+                  <span className="text-base font-bold text-slate-400">{p.weeksAlive}w</span>
                   {p.eliminatedWeek && <p className="text-xs text-red-400">Out wk {p.eliminatedWeek}</p>}
                 </div>
               </div>
@@ -438,7 +438,7 @@ export default function GroupDetailPage() {
           </>
         )}
         {alive.length === 0 && eliminated.length === 0 && (
-          <div className="px-5 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>No participants yet.</div>
+          <div className="px-6 py-10 text-center text-sm" style={{ color: "var(--text-muted)" }}>No participants yet.</div>
         )}
       </div>
     );
@@ -459,14 +459,14 @@ export default function GroupDetailPage() {
     const minsLeft = totalMins % 60;
     const timeStr = hoursLeft > 0 ? `${hoursLeft}h ${minsLeft}m` : `${minsLeft}m`;
     return (
-      <div className="rounded-2xl p-4 border-2 border-red-400 bg-red-50 flex items-start gap-3 mb-4">
+      <div className="rounded-2xl p-5 border-2 border-red-400 bg-red-50 flex items-start gap-3 mb-4">
         <span className="text-red-500 text-lg flex-shrink-0">⚠️</span>
         <div className="flex-1">
-          <p className="text-sm font-bold text-red-700">Deadline approaching — you haven&apos;t picked yet today!</p>
+          <p className="text-base font-bold text-red-700">Deadline approaching — you haven&apos;t picked yet today!</p>
           <p className="text-sm text-red-600 mt-0.5"><strong>{timeStr}</strong> remaining.</p>
         </div>
         <Link href={`/enter-tips?meetingId=${todayMeetingEntry.meeting_id}&groupId=${group.id}`}
-          className="flex-shrink-0 px-3 py-2 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 whitespace-nowrap">
+          className="flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 whitespace-nowrap">
           Pick Now →
         </Link>
       </div>
@@ -478,9 +478,9 @@ export default function GroupDetailPage() {
       <div className="max-w-2xl mx-auto px-4 pb-24">
 
         {/* Hero Header */}
-        <div className="rounded-b-3xl px-6 pt-6 pb-6 mb-5 -mx-4"
+        <div className="rounded-b-3xl px-6 pt-8 pb-8 mb-6 -mx-4"
           style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f4c2a 100%)" }}>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold tracking-widest text-green-400 uppercase">
                 {group.type === "last_man_standing" ? "⚽ Football" : "🏇 Horse Racing"}
@@ -492,14 +492,14 @@ export default function GroupDetailPage() {
             </span>
           </div>
 
-          <h1 className="text-3xl font-black text-white mb-3 leading-tight">{group.name}</h1>
+          <h1 className="text-4xl font-black text-white mb-4 leading-tight">{group.name}</h1>
 
-          <div className="flex items-center gap-3 flex-wrap mb-4">
-            <span className="text-sm text-white/60">
+          <div className="flex items-center gap-3 flex-wrap mb-5">
+            <span className="text-base text-white/60">
               👥 {(group.member_emails || []).length} member{(group.member_emails || []).length !== 1 ? "s" : ""}
             </span>
             <span className="text-white/30">·</span>
-            <span className="text-sm text-white/60">
+            <span className="text-base text-white/60">
               Code: <span className="font-mono font-bold text-green-400">{group.invite_code}</span>
             </span>
           </div>
@@ -507,16 +507,16 @@ export default function GroupDetailPage() {
           <div className="flex gap-2 flex-wrap">
             {isOwner && (
               <button onClick={handleShareInvite}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all active:scale-95"
+                className="flex items-center gap-2 px-5 py-3 rounded-xl text-base font-bold text-white transition-all active:scale-95"
                 style={{ background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)" }}>
-                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white flex-shrink-0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.116 1.529 5.845L.057 23.882l6.235-1.634A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.371l-.359-.214-3.701.97.988-3.61-.234-.37A9.818 9.818 0 0112 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.421-4.398 9.818-9.818 9.818z"/></svg>
+                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white flex-shrink-0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.116 1.529 5.845L.057 23.882l6.235-1.634A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.371l-.359-.214-3.701.97.988-3.61-.234-.37A9.818 9.818 0 0112 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.421-4.398 9.818-9.818 9.818z"/></svg>
                 Share Invite
               </button>
             )}
 
             {group.type === "horse_racing" && todayMeeting && (
               <Link href={`/enter-tips?meetingId=${todayMeeting.id}&groupId=${group.id}`}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white active:scale-95 transition-all"
+                className="flex items-center gap-2 px-5 py-3 rounded-xl text-base font-bold text-white active:scale-95 transition-all"
                 style={{ background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)" }}>
                 🐴 Select Horses
               </Link>
@@ -524,24 +524,24 @@ export default function GroupDetailPage() {
           </div>
 
           {(isOwner || isAdmin) && (
-            <button onClick={() => setShowDeleteModal(true)} className="mt-3 flex items-center gap-1.5 text-xs font-medium text-white/30 hover:text-white/60 transition-colors">
-              <Trash2 className="w-3.5 h-3.5" />
+            <button onClick={() => setShowDeleteModal(true)} className="mt-4 flex items-center gap-1.5 text-sm font-medium text-white/30 hover:text-white/60 transition-colors">
+              <Trash2 className="w-4 h-4" />
               {groupStatus === "completed" ? "Delete group" : "Archive or delete group"}
             </button>
           )}
           {isMember && !isOwner && (
-            <button onClick={() => setShowLeaveConfirm(true)} className="mt-3 flex items-center gap-1.5 text-xs font-medium text-white/30 hover:text-white/60 transition-colors">
-              <X className="w-3.5 h-3.5" /> Leave group
+            <button onClick={() => setShowLeaveConfirm(true)} className="mt-4 flex items-center gap-1.5 text-sm font-medium text-white/30 hover:text-white/60 transition-colors">
+              <X className="w-4 h-4" /> Leave group
             </button>
           )}
         </div>
 
         {group.entry_fee_enabled && !hasPaid && (
-          <div className="mb-5 rounded-2xl p-5 border-2 border-green-300 bg-green-50">
+          <div className="mb-6 rounded-3xl p-6 border-2 border-green-300 bg-green-50">
             <div className="flex items-center gap-3">
-              <DollarSign className="w-8 h-8 text-green-600 flex-shrink-0" />
+              <DollarSign className="w-9 h-9 text-green-600 flex-shrink-0" />
               <div className="flex-1">
-                <p className="font-semibold text-green-800">Entry fee required</p>
+                <p className="font-semibold text-base text-green-800">Entry fee required</p>
                 <p className="text-sm text-green-600">Pay {formatAmount(group.entry_fee, group.currency)} to participate.</p>
               </div>
             </div>
@@ -556,20 +556,20 @@ export default function GroupDetailPage() {
           const hasEntry = entries.some(e => e.meeting_id === todayEntry.meeting_id && e.user_email === currentUserEmail && e.submitted);
           if (hasEntry) return null;
           return (
-            <div className="mb-5 rounded-2xl p-4 border-2 border-red-200 bg-red-50 flex items-start gap-3">
+            <div className="mb-6 rounded-2xl p-5 border-2 border-red-200 bg-red-50 flex items-start gap-3">
               <span className="text-red-500 text-lg flex-shrink-0">⚠️</span>
-              <p className="text-sm text-red-700"><strong>You missed today&apos;s deadline</strong> — 0 points recorded.</p>
+              <p className="text-base text-red-700"><strong>You missed today&apos;s deadline</strong> — 0 points recorded.</p>
             </div>
           );
         })()}
 
-        <div className="flex gap-1 mb-5 rounded-xl p-1" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+        <div className="flex gap-1 mb-6 rounded-xl p-1.5" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => {
               if (tab.id === "lms" && firstLmsComp) { router.push(`/lms/${firstLmsComp.id}?groupId=${group.id}&tab=pick`); return; }
               setActiveTab(tab.id);
             }}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === tab.id ? "bg-green-500 text-white" : ""}`}
+              className={`flex-1 py-3 rounded-xl text-base font-semibold transition-colors ${activeTab === tab.id ? "bg-green-500 text-white" : ""}`}
               style={activeTab !== tab.id ? { color: "var(--text-muted)" } : {}}>
               {tab.label}
             </button>
@@ -577,33 +577,33 @@ export default function GroupDetailPage() {
         </div>
 
         {activeTab === "leaderboard" && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {renderDeadlineBanner()}
             {group.type === "last_man_standing" ? renderLmsStandings() : (
               <>
                 {!isMember && !isOwner && !isAdmin && (
-                  <div className="rounded-2xl border-2 border-green-300 bg-green-50 px-5 py-4 flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-green-800">Join this group to see full player names and submit your picks.</p>
+                  <div className="rounded-3xl border-2 border-green-300 bg-green-50 px-6 py-5 flex items-center justify-between gap-3">
+                    <p className="text-base font-medium text-green-800">Join this group to see full player names and submit your picks.</p>
                     <Link href={`/join?code=${group.invite_code}&pin=${group.join_pin || ""}`}
-                      className="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-green-600 hover:bg-green-700 whitespace-nowrap">Join</Link>
+                      className="flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-green-600 hover:bg-green-700 whitespace-nowrap">Join</Link>
                   </div>
                 )}
                 {group.type === "horse_racing" && groupStatus === "completed" && leaderboard.length > 0 && (
-                  <div className="rounded-2xl border-2 border-amber-400 bg-amber-50 px-5 py-4 flex items-center gap-3">
-                    <span className="text-3xl flex-shrink-0">🏆</span>
+                  <div className="rounded-3xl border-2 border-amber-400 bg-amber-50 px-6 py-5 flex items-center gap-3">
+                    <span className="text-4xl flex-shrink-0">🏆</span>
                     <div className="flex-1">
-                      <p className="font-bold text-amber-800 text-base">
+                      <p className="font-bold text-amber-800 text-lg">
                         {(group.member_names || {})[leaderboard[0].email] || leaderboard[0].participantName || leaderboard[0].email.split("@")[0]} wins with {leaderboard[0].total} points!
                       </p>
-                      <p className="text-xs text-amber-600 mt-0.5">Competition complete</p>
+                      <p className="text-sm text-amber-600 mt-0.5">Competition complete</p>
                     </div>
                   </div>
                 )}
                 {isOwner && groupStatus === "completed" && group.status !== "finalised" && (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 flex items-center justify-between gap-3">
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 px-6 py-5 flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Finalise Competition</p>
-                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>Lock results and mark this competition as complete.</p>
+                      <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Finalise Competition</p>
+                      <p className="text-sm" style={{ color: "var(--text-muted)" }}>Lock results and mark this competition as complete.</p>
                     </div>
                     <button onClick={async () => {
                       setFinalising(true);
@@ -611,27 +611,27 @@ export default function GroupDetailPage() {
                       setGroup(g => g ? { ...g, status: "finalised" as any } : g);
                       setFinalised(true); setFinalising(false);
                     }} disabled={finalising}
-                      className="bg-slate-800 hover:bg-slate-700 text-white rounded-xl px-4 py-2 text-sm font-semibold whitespace-nowrap flex-shrink-0">
+                      className="bg-slate-800 hover:bg-slate-700 text-white rounded-xl px-4 py-2.5 text-sm font-semibold whitespace-nowrap flex-shrink-0">
                       {finalising ? "Finalising..." : "Finalise"}
                     </button>
                   </div>
                 )}
                 {(finalised || group.status === "finalised") && (
-                  <div className="rounded-2xl border border-green-200 bg-green-50 px-5 py-3 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
-                    <p className="text-sm font-semibold text-green-700">Competition finalised! Results are now locked.</p>
+                  <div className="rounded-3xl border border-green-200 bg-green-50 px-6 py-4 flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <p className="text-base font-semibold text-green-700">Competition finalised! Results are now locked.</p>
                   </div>
                 )}
                 {meetings.length > 0 && (
                   <div className="flex gap-2 overflow-x-auto pb-2">
                     <button onClick={() => setSelectedMeetingId(null)}
-                      className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${selectedMeetingId === null ? "bg-green-500 text-white" : "bg-white border"}`}
+                      className={`flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap ${selectedMeetingId === null ? "bg-green-500 text-white" : "bg-white border"}`}
                       style={selectedMeetingId !== null ? { background: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-muted)" } : {}}>
                       Overall
                     </button>
                     {meetings.map(m => (
                       <button key={m.id} onClick={() => setSelectedMeetingId(m.id)}
-                        className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${selectedMeetingId === m.id ? "bg-green-500 text-white" : "bg-white border"}`}
+                        className={`flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap ${selectedMeetingId === m.id ? "bg-green-500 text-white" : "bg-white border"}`}
                         style={selectedMeetingId !== m.id ? { background: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-muted)" } : {}}>
                         {m.name}
                       </button>
@@ -640,36 +640,36 @@ export default function GroupDetailPage() {
                 )}
                 {(isOwner || isAdmin) && leaderboard.length > 0 && (
                   <button onClick={handleShareLeaderboard}
-                    className="w-full py-3 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2"
+                    className="w-full py-4 rounded-2xl font-bold text-base text-white flex items-center justify-center gap-2"
                     style={{ background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)" }}>
                     <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.116 1.529 5.845L.057 23.882l6.235-1.634A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.371l-.359-.214-3.701.97.988-3.61-.234-.37A9.818 9.818 0 0112 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.421-4.398 9.818-9.818 9.818z"/></svg>
                     Share Leaderboard
                   </button>
                 )}
-                <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
-                  <div className="px-5 py-4 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
-                    <Trophy className="w-4 h-4 text-amber-500" />
-                    <h2 className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>
+                <div className="rounded-3xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+                  <div className="px-6 py-5 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
+                    <Trophy className="w-5 h-5 text-amber-500" />
+                    <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>
                       {currentMeeting ? `${currentMeeting.name} Leaderboard` : "Overall Leaderboard"}
                     </h2>
                   </div>
                   {leaderboard.length === 0 ? (
-                    <div className="px-5 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>No entries yet.</div>
+                    <div className="px-6 py-10 text-center text-sm" style={{ color: "var(--text-muted)" }}>No entries yet.</div>
                   ) : (
                     <div className="divide-y" style={{ borderColor: "var(--border)" }}>
                       {leaderboard.map((row, i) => (
-                        <div key={row.email} className={`flex items-center justify-between px-5 py-3 ${row.email === currentUserEmail ? "bg-green-50" : ""}`}>
+                        <div key={row.email} className={`flex items-center justify-between px-6 py-4 ${row.email === currentUserEmail ? "bg-green-50" : ""}`}>
                           <div className="flex items-center gap-3">
-                            <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0
+                            <span className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0
   ${i === 0 ? "bg-amber-400 text-white" : i === 1 ? "bg-slate-300 text-white" : i === 2 ? "bg-orange-300 text-white" : "bg-slate-100 text-slate-400"}`}>
   {i + 1}
 </span>
-                            <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+                            <span className="text-base font-medium" style={{ color: "var(--text-primary)" }}>
                               {(isMember || isOwner || isAdmin) ? ((group.member_names || {})[row.email] || row.participantName || row.email.split("@")[0]) : `Player ${i + 1}`}
                               {row.email === currentUserEmail && <span className="ml-1 text-xs text-green-500 font-semibold">(you)</span>}
                             </span>
                           </div>
-                          <span className="font-black text-base text-green-600">{row.total} pts</span>
+                          <span className="font-black text-lg text-green-600">{row.total} pts</span>
                         </div>
                       ))}
                     </div>
@@ -681,30 +681,30 @@ export default function GroupDetailPage() {
         )}
 
         {activeTab === "meetings" && (
-          <div className="space-y-4">
-            <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
-              <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: "var(--border)" }}>
+          <div className="space-y-5">
+            <div className="rounded-3xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+              <div className="px-6 py-5 border-b flex items-center justify-between" style={{ borderColor: "var(--border)" }}>
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-green-500" />
-                  <h2 className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>Meetings</h2>
+                  <Calendar className="w-5 h-5 text-green-500" />
+                  <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>Meetings</h2>
                 </div>
                 {(isOwner || isAdmin) && (
-                  <button onClick={() => setShowAddMeeting(!showAddMeeting)} className="flex items-center gap-1 text-xs font-semibold text-green-500 hover:text-green-600">
-                    <Plus className="w-3.5 h-3.5" /> Add
+                  <button onClick={() => setShowAddMeeting(!showAddMeeting)} className="flex items-center gap-1 text-sm font-semibold text-green-500 hover:text-green-600">
+                    <Plus className="w-4 h-4" /> Add
                   </button>
                 )}
               </div>
               {showAddMeeting && (
-                <div className="px-5 py-3 border-b space-y-2" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+                <div className="px-6 py-4 border-b space-y-2" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
                   {availableMeetings.length === 0 ? (
-                    <p className="text-xs" style={{ color: "var(--text-muted)" }}>All available meetings have been added.</p>
+                    <p className="text-sm" style={{ color: "var(--text-muted)" }}>All available meetings have been added.</p>
                   ) : (
                     <>
-                      <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Select a meeting to add:</p>
+                      <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Select a meeting to add:</p>
                       {availableMeetings.map(m => (
                         <button key={m.id} onClick={() => addMeeting(m.id)}
-                          className="w-full text-left px-3 py-2 rounded-xl hover:bg-green-50 text-sm transition-colors" style={{ color: "var(--text-primary)" }}>
-                          {m.name} <span className="text-xs ml-1" style={{ color: "var(--text-muted)" }}>· {format(new Date(m.date), "d MMM yyyy")}</span>
+                          className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-green-50 text-base transition-colors" style={{ color: "var(--text-primary)" }}>
+                          {m.name} <span className="text-sm ml-1" style={{ color: "var(--text-muted)" }}>· {format(new Date(m.date), "d MMM yyyy")}</span>
                         </button>
                       ))}
                     </>
@@ -712,16 +712,16 @@ export default function GroupDetailPage() {
                 </div>
               )}
               {meetings.length === 0 ? (
-                <div className="px-5 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
+                <div className="px-6 py-10 text-center text-sm" style={{ color: "var(--text-muted)" }}>
                   {(isOwner || isAdmin) ? "No meetings added yet. Click Add to include a meeting." : "No meetings selected for this group yet."}
                 </div>
               ) : (
                 <div className="divide-y" style={{ borderColor: "var(--border)" }}>
                   {meetings.map(m => (
-                    <div key={m.id} className="flex items-center justify-between px-5 py-3">
+                    <div key={m.id} className="flex items-center justify-between px-6 py-4">
                       <Link href={`/enter-tips?meetingId=${m.id}&groupId=${group.id}`} className="flex-1">
-                        <p className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>{m.name}</p>
-                        <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{format(new Date(m.date), "d MMM yyyy")}</p>
+                        <p className="font-medium text-base" style={{ color: "var(--text-primary)" }}>{m.name}</p>
+                        <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>{format(new Date(m.date), "d MMM yyyy")}</p>
                         {(raceCounts[m.id] || 0) > 0 ? (
                           <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 mt-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
                             ✅ {raceCounts[m.id]} race{raceCounts[m.id] !== 1 ? "s" : ""} available
@@ -734,11 +734,11 @@ export default function GroupDetailPage() {
                       </Link>
                       <div className="flex items-center gap-2">
                         <Link href={`/enter-tips?meetingId=${m.id}&groupId=${group.id}`}>
-                          <ChevronRight className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+                          <ChevronRight className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
                         </Link>
                         {(isOwner || isAdmin) && (
-                          <button onClick={() => removeMeeting(m.id)} className="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-400 transition-colors">
-                            <X className="w-3.5 h-3.5" />
+                          <button onClick={() => removeMeeting(m.id)} className="w-7 h-7 flex items-center justify-center text-slate-300 hover:text-red-400 transition-colors">
+                            <X className="w-4 h-4" />
                           </button>
                         )}
                       </div>
@@ -751,51 +751,51 @@ export default function GroupDetailPage() {
         )}
 
         {activeTab === "lms" && (
-          <div className="space-y-4">
-            <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
-              <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: "var(--border)" }}>
+          <div className="space-y-5">
+            <div className="rounded-3xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+              <div className="px-6 py-5 border-b flex items-center justify-between" style={{ borderColor: "var(--border)" }}>
                 <div className="flex items-center gap-2">
-                  <Swords className="w-4 h-4 text-purple-500" />
-                  <h2 className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>Last Man Standing</h2>
+                  <Swords className="w-5 h-5 text-purple-500" />
+                  <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>Last Man Standing</h2>
                 </div>
                 {isOwner && (
-                  <button onClick={() => setShowCreateLms(!showCreateLms)} className="flex items-center gap-1 text-xs font-semibold text-purple-500 hover:text-purple-600">
-                    <Plus className="w-3.5 h-3.5" /> New
+                  <button onClick={() => setShowCreateLms(!showCreateLms)} className="flex items-center gap-1 text-sm font-semibold text-purple-500 hover:text-purple-600">
+                    <Plus className="w-4 h-4" /> New
                   </button>
                 )}
               </div>
               {showCreateLms && (
-                <div className="px-5 py-4 border-b space-y-3" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+                <div className="px-6 py-5 border-b space-y-3" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
                   <input placeholder="Competition name e.g. Season 2025" value={newLmsName} onChange={e => setNewLmsName(e.target.value)}
-                    className="w-full h-10 rounded-xl border px-3 text-sm" style={{ borderColor: "var(--border)" }} />
+                    className="w-full h-11 rounded-xl border px-3 text-base" style={{ borderColor: "var(--border)" }} />
                   <div className="flex gap-2">
                     <button onClick={createLmsCompetition} disabled={!newLmsName.trim() || creatingLms}
-                      className="flex-1 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold disabled:opacity-50">
+                      className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-base font-semibold disabled:opacity-50">
                       {creatingLms ? "Creating..." : "Create Competition"}
                     </button>
-                    <button onClick={() => setShowCreateLms(false)} className="px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600">Cancel</button>
+                    <button onClick={() => setShowCreateLms(false)} className="px-4 py-2.5 rounded-xl border border-slate-200 text-base text-slate-600">Cancel</button>
                   </div>
                 </div>
               )}
               {lmsCompetitions.length === 0 ? (
-                <div className="px-5 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
+                <div className="px-6 py-10 text-center text-sm" style={{ color: "var(--text-muted)" }}>
                   {isOwner ? "No LMS competitions yet. Create one above!" : "No Last Man Standing competitions yet."}
                 </div>
               ) : (
                 <div className="divide-y" style={{ borderColor: "var(--border)" }}>
                   {lmsCompetitions.map(comp => (
-                    <div key={comp.id} className="flex items-center justify-between px-5 py-4 gap-3">
+                    <div key={comp.id} className="flex items-center justify-between px-6 py-5 gap-3">
                       <Link href={`/lms/${comp.id}?groupId=${group.id}`}
                         className="flex items-center justify-between flex-1 hover:bg-purple-50 transition-colors rounded-xl -mx-2 px-2 py-1">
                         <div>
-                          <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>{comp.name}</p>
-                          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Week {comp.current_week} · {comp.status}</p>
+                          <p className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>{comp.name}</p>
+                          <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>Week {comp.current_week} · {comp.status}</p>
                         </div>
-                        <ChevronRight className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+                        <ChevronRight className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
                       </Link>
                       {isAdmin && (
                         <Link href={`/admin/lms-results?competitionId=${comp.id}&groupId=${group.id}`}
-                          className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white whitespace-nowrap">
+                          className="flex-shrink-0 text-sm font-semibold px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white whitespace-nowrap">
                           Enter Results →
                         </Link>
                       )}
@@ -812,23 +812,23 @@ export default function GroupDetailPage() {
         )}
 
         {activeTab === "mypicks" && (
-          <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
-            <div className="px-5 py-4 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
-              <Trophy className="w-4 h-4 text-amber-500" />
-              <h2 className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>My Picks</h2>
+          <div className="rounded-3xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+            <div className="px-6 py-5 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
+              <Trophy className="w-5 h-5 text-amber-500" />
+              <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>My Picks</h2>
             </div>
             <div className="divide-y" style={{ borderColor: "var(--border)" }}>
               {entries.filter(e => e.user_email === currentUserEmail).length === 0 ? (
-                <div className="px-5 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>No picks submitted yet.</div>
+                <div className="px-6 py-10 text-center text-sm" style={{ color: "var(--text-muted)" }}>No picks submitted yet.</div>
               ) : (
                 entries.filter(e => e.user_email === currentUserEmail).map(entry => {
                   const meeting = meetings.find(m => m.id === entry.meeting_id);
                   return (
-                    <div key={entry.id} className="px-5 py-4">
-                      <p className="font-semibold text-sm mb-2" style={{ color: "var(--text-primary)" }}>{meeting?.name || "Meeting"}</p>
-                      <div className="space-y-1">
+                    <div key={entry.id} className="px-6 py-5">
+                      <p className="font-semibold text-base mb-2" style={{ color: "var(--text-primary)" }}>{meeting?.name || "Meeting"}</p>
+                      <div className="space-y-1.5">
                         {(entry.selections || []).map((sel: any) => (
-                          <div key={sel.race_id} className="flex items-center justify-between text-xs">
+                          <div key={sel.race_id} className="flex items-center justify-between text-sm">
                             <span style={{ color: "var(--text-muted)" }}>Race {sel.race_number}</span>
                             <span className="font-medium" style={{ color: "var(--text-primary)" }}>
                               {sel.horse_name}
@@ -838,7 +838,7 @@ export default function GroupDetailPage() {
                         ))}
                       </div>
                       {entry.total_points > 0 && (
-                        <p className="text-xs font-bold text-green-600 mt-2">{entry.total_points} pts</p>
+                        <p className="text-sm font-bold text-green-600 mt-2">{entry.total_points} pts</p>
                       )}
                     </div>
                   );
@@ -848,7 +848,7 @@ export default function GroupDetailPage() {
           </div>
         )}
 
-        <div className="text-center px-4 py-3 text-xs rounded-2xl mt-5" style={{ color: "var(--text-muted)", background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+        <div className="text-center px-5 py-4 text-xs rounded-2xl mt-6" style={{ color: "var(--text-muted)", background: "var(--bg-card)", border: "1px solid var(--border)" }}>
           For entertainment only · 18+ ·{" "}
           <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-70">begambleaware.org</a>
         </div>
