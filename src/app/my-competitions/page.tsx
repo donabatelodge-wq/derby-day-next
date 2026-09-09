@@ -42,7 +42,7 @@ export default async function MyCompetitionsPage() {
               return (
                 <Link key={group.id} href={`/group/${group.id}`}
                   className="flex items-center gap-5 p-6 rounded-3xl bg-white border border-slate-100 hover:border-green-200 hover:shadow-md shadow-sm transition-all active:scale-95">
-                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
+                  <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
                     style={{ background: isRacing ? "rgba(34,197,94,0.1)" : "rgba(168,85,247,0.1)" }}>
                     {isRacing ? "🏇" : "⚽"}
                   </div>
