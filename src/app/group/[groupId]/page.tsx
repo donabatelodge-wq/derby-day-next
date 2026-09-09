@@ -104,8 +104,8 @@ function GroupMembersTab({ group, payments, currentUserEmail, onGroupUpdate }: {
   return (
     <div className="space-y-4">
       <div className="rounded-3xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
-        <div className="px-6 py-5 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
-          <Users className="w-5 h-5 text-green-500" />
+        <div className="px-9 py-8 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
+          <Users className="w-8 h-8 text-green-500" />
           <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>Members ({members.length}/{group.max_players || 20})</h2>
         </div>
         {members.length === 0 ? (
