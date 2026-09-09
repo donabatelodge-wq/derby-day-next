@@ -150,7 +150,7 @@ export default function AdminWelcomeContent() {
   );
 
   return (
-    <div className="min-h-screen pb-32" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen pb-40" style={{ background: "var(--bg)" }}>
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-5">
 
         <div>
@@ -212,8 +212,8 @@ export default function AdminWelcomeContent() {
 
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white border-t border-slate-100"
-        style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
+      <div className="fixed left-0 right-0 px-4 pt-3 pb-3 bg-white border-t border-slate-100 z-40"
+        style={{ bottom: "calc(var(--bottom-nav-height, 4rem) + var(--safe-bottom, 0px))" }}>
         <div className="max-w-2xl mx-auto">
           <button onClick={handleSave} disabled={saving}
             className="w-full h-14 rounded-2xl text-white font-black text-base flex items-center justify-center gap-2 disabled:opacity-40 transition-all active:scale-95"
