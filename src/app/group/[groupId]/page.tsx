@@ -366,11 +366,12 @@ export default function GroupDetailPage() {
   const todayMeeting = meetings.find(m => m.date === todayStr);
 
   const tabs = [
-    { id: "leaderboard", label: "Leaderboard" },
-    ...(group.type === "horse_racing" && isMember ? [{ id: "mypicks", label: "📋 My Picks" }] : []),
-    ...(group.type === "last_man_standing" ? [{ id: "lms", label: "⚔️ Pick Team" }] : []),
-    ...(isOwner ? [{ id: "members", label: "Members" }] : []),
-  ];
+  { id: "leaderboard", label: "Leaderboard" },
+  ...(group.type === "horse_racing" ? [{ id: "meetings", label: "🏇 Select Horses" }] : []),
+  ...(group.type === "horse_racing" && isMember ? [{ id: "mypicks", label: "📋 My Picks" }] : []),
+  ...(group.type === "last_man_standing" ? [{ id: "lms", label: "⚔️ Pick Team" }] : []),
+  ...(isOwner ? [{ id: "members", label: "Members" }] : []),
+];
 
   const renderLmsStandings = () => {
     const comp = lmsCompetitions[0];
