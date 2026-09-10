@@ -7,12 +7,16 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import {
   Plus, Trash2, Check, Trophy, ChevronDown, ChevronUp,
-  Pencil, AlertCircle, X, Zap, RefreshCw, Lock, Eye, EyeOff
+  Pencil, AlertCircle, X, Zap, RefreshCw, Lock, Eye, EyeOff, ClipboardPaste
 } from "lucide-react";
 
 const EMPTY_FORM = {
   race_number: "", race_name: "", race_type: "Thoroughbred",
   distance: "", race_time: "", horses: [{ number: 1, name: "", jockey: "", trainer: "" }]
+};
+
+const EMPTY_SHEETS_FORM = {
+  race_number: "", race_name: "", race_time: "", distance: "", paste: "",
 };
 
 async function racingApiCall(endpoint: string, username: string, password: string) {
@@ -26,6 +30,24 @@ async function racingApiCall(endpoint: string, username: string, password: strin
     throw new Error(err.error || `API error ${res.status}`);
   }
   return res.json();
+}
+
+function parseSheetsRows(paste: string) {
+  return paste
+    .split("\n")
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .map((line, idx) => {
+      const cols = line.includes("\t") ? line.split("\t") : line.split(",");
+      const [colNumber, colName, colJockey, colTrainer] = cols.map(c => (c ?? "").trim());
+      return {
+        number: Number(colNumber) || idx + 1,
+        name: colName || "",
+        jockey: colJockey || "",
+        trainer: colTrainer || "",
+      };
+    })
+    .filter(h => h.name);
 }
 
 export default function AdminRacesContent() {
@@ -69,6 +91,10 @@ export default function AdminRacesContent() {
   const [joinDeadline, setJoinDeadline] = useState("");
   const [editingDeadline, setEditingDeadline] = useState(false);
   const [savingDeadline, setSavingDeadline] = useState(false);
+  const [showSheetsImport, setShowSheetsImport] = useState(false);
+  const [sheetsForm, setSheetsForm] = useState(EMPTY_SHEETS_FORM);
+  const [sheetsSaving, setSheetsSaving] = useState(false);
+  const [sheetsError, setSheetsError] = useState("");
 
   const load = useCallback(async () => {
     if (!meetingId) return;
@@ -164,6 +190,29 @@ export default function AdminRacesContent() {
     await load();
     setSaving(false);
     toast.success("Race created!");
+  };
+
+  const handleSheetsCreateRace = async () => {
+    setSheetsError("");
+    if (!sheetsForm.race_number.trim()) { setSheetsError("Please enter a race number."); return; }
+    const horses = parseSheetsRows(sheetsForm.paste);
+    if (horses.length === 0) { setSheetsError("No runners found in the pasted text. Expected columns: Number, Name, Jockey, Trainer."); return; }
+    setSheetsSaving(true);
+    await supabase.from("races").insert({
+      meeting_id: meetingId,
+      race_number: Number(sheetsForm.race_number),
+      race_name: sheetsForm.race_name,
+      race_type: "Thoroughbred",
+      distance: sheetsForm.distance,
+      race_time: sheetsForm.race_time,
+      horses,
+      result_entered: false,
+    });
+    setSheetsForm(EMPTY_SHEETS_FORM);
+    setShowSheetsImport(false);
+    await load();
+    setSheetsSaving(false);
+    toast.success(`Race created with ${horses.length} runners!`);
   };
 
   const handleSaveEdit = async (raceId: string) => {
@@ -303,6 +352,8 @@ export default function AdminRacesContent() {
   );
   if (!isAdmin) return null;
 
+  const sheetsPreviewCount = parseSheetsRows(sheetsForm.paste).length;
+
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <div className="max-w-2xl mx-auto px-4 py-8">
@@ -387,6 +438,67 @@ export default function AdminRacesContent() {
                 className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
                 <Zap className="w-4 h-4" />
                 {apiImporting ? "Importing..." : "Import Runners"}
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl p-5 border mb-5" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <ClipboardPaste className="w-4 h-4 text-purple-500" />
+              <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>Bulk Add Race from Google Sheets</p>
+            </div>
+            <button onClick={() => { setShowSheetsImport(!showSheetsImport); setSheetsError(""); }}
+              className="text-xs font-semibold text-purple-500 hover:text-purple-600">
+              {showSheetsImport ? "Cancel" : "Add Race"}
+            </button>
+          </div>
+          <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+            Copy a range from your sheet (Number, Name, Jockey, Trainer columns) and paste it below. Creates a new race.
+          </p>
+          {showSheetsImport && (
+            <div className="space-y-3 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Race Number</label>
+                  <input type="number" value={sheetsForm.race_number} onChange={e => setSheetsForm(f => ({ ...f, race_number: e.target.value }))}
+                    className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Race Time</label>
+                  <input placeholder="e.g. 13:30" value={sheetsForm.race_time} onChange={e => setSheetsForm(f => ({ ...f, race_time: e.target.value }))}
+                    className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Race Name</label>
+                  <input placeholder="Optional" value={sheetsForm.race_name} onChange={e => setSheetsForm(f => ({ ...f, race_name: e.target.value }))}
+                    className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Distance</label>
+                  <input placeholder="Optional" value={sheetsForm.distance} onChange={e => setSheetsForm(f => ({ ...f, distance: e.target.value }))}
+                    className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>
+                  Paste runners (Number, Name, Jockey, Trainer)
+                </label>
+                <textarea rows={6} placeholder={"4\tHighland Reel\tR L Moore\tA P O'Brien\n7\tSea Of Class\tJ Doyle\tW Haggas"}
+                  value={sheetsForm.paste} onChange={e => setSheetsForm(f => ({ ...f, paste: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-mono" />
+                <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                  {sheetsPreviewCount > 0 ? `${sheetsPreviewCount} runner${sheetsPreviewCount !== 1 ? "s" : ""} detected` : "No runners detected yet"}
+                </p>
+              </div>
+              {sheetsError && <p className="text-xs text-red-500 rounded-lg bg-red-50 px-3 py-2">{sheetsError}</p>}
+              <button onClick={handleSheetsCreateRace} disabled={!sheetsForm.race_number.trim() || sheetsPreviewCount === 0 || sheetsSaving}
+                className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+                <ClipboardPaste className="w-4 h-4" />
+                {sheetsSaving ? "Creating..." : `Create Race${sheetsPreviewCount > 0 ? ` (${sheetsPreviewCount} runners)` : ""}`}
               </button>
             </div>
           )}
@@ -494,7 +606,7 @@ export default function AdminRacesContent() {
         {races.length === 0 ? (
           <div className="text-center py-16" style={{ color: "var(--text-muted)" }}>
             <Trophy className="w-8 h-8 mx-auto mb-3 opacity-40" />
-            <p>No races yet. Use Racing API import above or add manually.</p>
+            <p>No races yet. Use Racing API import, paste from Sheets, or add manually.</p>
           </div>
         ) : (
           <div className="space-y-3">
