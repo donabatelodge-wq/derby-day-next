@@ -104,8 +104,8 @@ function GroupMembersTab({ group, payments, currentUserEmail, onGroupUpdate }: {
   return (
     <div className="space-y-4">
       <div className="rounded-3xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
-        <div className="px-9 py-8 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
-          <Users className="w-8 h-8 text-green-500" />
+        <div className="px-6 py-5 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
+          <Users className="w-5 h-5 text-green-500" />
           <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>Members ({members.length}/{group.max_players || 20})</h2>
         </div>
         {members.length === 0 ? (
@@ -366,12 +366,12 @@ export default function GroupDetailPage() {
   const todayMeeting = meetings.find(m => m.date === todayStr);
 
   const tabs = [
-  { id: "leaderboard", label: "Leaderboard" },
-  ...(group.type === "horse_racing" ? [{ id: "meetings", label: "🏇 Select Horses" }] : []),
-  ...(group.type === "horse_racing" && isMember ? [{ id: "mypicks", label: "📋 My Picks" }] : []),
-  ...(group.type === "last_man_standing" ? [{ id: "lms", label: "⚔️ Pick Team" }] : []),
-  ...(isOwner ? [{ id: "members", label: "Members" }] : []),
-];
+    { id: "leaderboard", label: "Leaderboard" },
+    ...(group.type === "horse_racing" ? [{ id: "meetings", label: "🏇 Select Horses" }] : []),
+    ...(group.type === "horse_racing" && isMember ? [{ id: "mypicks", label: "📋 My Picks" }] : []),
+    ...(group.type === "last_man_standing" ? [{ id: "lms", label: "⚔️ Pick Team" }] : []),
+    ...(isOwner ? [{ id: "members", label: "Members" }] : []),
+  ];
 
   const renderLmsStandings = () => {
     const comp = lmsCompetitions[0];
@@ -823,24 +823,61 @@ export default function GroupDetailPage() {
                 <div className="px-6 py-10 text-center text-sm" style={{ color: "var(--text-muted)" }}>No picks submitted yet.</div>
               ) : (
                 entries.filter(e => e.user_email === currentUserEmail).map(entry => {
-                  const meeting = meetings.find(m => m.id === entry.meeting_id);
+                  const meeting = allMeetings.find(m => m.id === entry.meeting_id);
+                  const p1 = meeting?.points_1st ?? 3;
+                  const p2 = meeting?.points_2nd ?? 2;
+                  const p3 = meeting?.points_3rd ?? 1;
+                  const bc1 = meeting?.best_chance_multiplier_1st ?? 2;
+                  const bc2 = meeting?.best_chance_multiplier_2nd ?? 2;
+                  const bc3 = meeting?.best_chance_multiplier_3rd ?? 2;
+
+                  const posLabel = (pos: number | null) => {
+                    if (pos === 1) return { text: "🥇 1st", color: "text-amber-600 bg-amber-50 border-amber-200" };
+                    if (pos === 2) return { text: "🥈 2nd", color: "text-slate-600 bg-slate-100 border-slate-200" };
+                    if (pos === 3) return { text: "🥉 3rd", color: "text-orange-600 bg-orange-50 border-orange-200" };
+                    return null;
+                  };
+
+                  const calcPoints = (sel: any) => {
+                    if (!sel.finish_position) return 0;
+                    let base = sel.finish_position === 1 ? p1 : sel.finish_position === 2 ? p2 : sel.finish_position === 3 ? p3 : 0;
+                    const mult = sel.finish_position === 1 ? bc1 : sel.finish_position === 2 ? bc2 : sel.finish_position === 3 ? bc3 : 1;
+                    if (sel.is_best_chance) base *= mult;
+                    return base;
+                  };
+
                   return (
                     <div key={entry.id} className="px-6 py-5">
-                      <p className="font-semibold text-base mb-2" style={{ color: "var(--text-primary)" }}>{meeting?.name || "Meeting"}</p>
-                      <div className="space-y-1.5">
-                        {(entry.selections || []).map((sel: any) => (
-                          <div key={sel.race_id} className="flex items-center justify-between text-sm">
-                            <span style={{ color: "var(--text-muted)" }}>Race {sel.race_number}</span>
-                            <span className="font-medium" style={{ color: "var(--text-primary)" }}>
-                              {sel.horse_name}
-                              {sel.is_best_chance && <span className="ml-1 text-amber-500">★</span>}
-                            </span>
-                          </div>
-                        ))}
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>{meeting?.name || "Meeting"}</p>
+                        <span className="font-black text-lg text-green-600">{entry.total_points || 0} pts</span>
                       </div>
-                      {entry.total_points > 0 && (
-                        <p className="text-sm font-bold text-green-600 mt-2">{entry.total_points} pts</p>
-                      )}
+                      <div className="space-y-2">
+                        {(entry.selections || []).map((sel: any) => {
+                          const label = posLabel(sel.finish_position ?? null);
+                          const pts = calcPoints(sel);
+                          return (
+                            <div key={sel.race_id} className="flex items-center justify-between text-sm rounded-xl px-4 py-3"
+                              style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
+                              <div className="flex-1 min-w-0">
+                                <span style={{ color: "var(--text-muted)" }}>Race {sel.race_number}</span>
+                                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                  <span className="font-medium" style={{ color: "var(--text-primary)" }}>{sel.horse_name || "No pick"}</span>
+                                  {sel.is_best_chance && <span className="text-amber-500 text-xs font-semibold">★ Best Chance</span>}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                {label ? (
+                                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${label.color}`}>{label.text}</span>
+                                ) : (
+                                  <span className="text-xs px-2 py-0.5 rounded-full border border-slate-200 text-slate-400">Not placed</span>
+                                )}
+                                <span className={`font-bold text-sm ${pts > 0 ? "text-green-600" : "text-slate-300"}`}>{pts}pt{pts !== 1 ? "s" : ""}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 })
