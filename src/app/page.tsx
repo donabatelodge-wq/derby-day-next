@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { HomeButtons } from "@/components/home/home-buttons";
+import { AddToHomeScreenBanner } from "@/components/home/add-to-homescreen-banner";
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -42,6 +43,8 @@ export default async function HomePage() {
     <div className="min-h-screen flex flex-col pb-24" style={{ background: "var(--bg)" }}>
       <div className="flex-1 flex flex-col items-center px-5 py-6">
         <div className="w-full max-w-lg">
+
+          <AddToHomeScreenBanner />
 
           {myGroups.length > 0 && (
             <div className="w-full mb-6">
