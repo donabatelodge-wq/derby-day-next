@@ -142,21 +142,21 @@ export default function LmsContent() {
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
-      <div className="max-w-2xl mx-auto px-4 py-10 pb-24">
+      <div className="max-w-2xl mx-auto px-5 py-8 pb-24">
 
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-1">
             <Swords className="w-5 h-5 text-purple-500" />
             <span className="text-xs font-semibold tracking-widest text-purple-500 uppercase">Last Man Standing</span>
           </div>
-          <h1 className="text-3xl font-bold" style={{ color: "var(--text-primary)" }}>{competition.name}</h1>
+          <h1 className="text-3xl font-black" style={{ color: "var(--text-primary)" }}>{competition.name}</h1>
           <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
             {group?.name} · Week {competition.current_week}
           </p>
         </div>
 
         {iAmEliminated && (
-          <div className="mb-6 rounded-2xl p-4 bg-red-50 border border-red-200 flex items-center gap-3">
+          <div className="mb-6 rounded-3xl p-5 bg-red-50 border border-red-200 flex items-center gap-3">
             <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0" />
             <div>
               <p className="font-semibold text-red-700">You&apos;ve been eliminated</p>
@@ -165,10 +165,10 @@ export default function LmsContent() {
           </div>
         )}
 
-        <div className="flex gap-1 mb-5 rounded-xl p-1" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+        <div className="flex gap-1 mb-5 rounded-2xl p-1" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSubmitted(false); }}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === tab.id ? "bg-purple-600 text-white" : ""}`}
+              className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-colors ${activeTab === tab.id ? "bg-purple-600 text-white" : ""}`}
               style={activeTab !== tab.id ? { color: "var(--text-muted)" } : {}}>
               {tab.label}
             </button>
@@ -178,13 +178,13 @@ export default function LmsContent() {
         {activeTab === "pick" && (
           <div className="space-y-4">
             {myPicks.filter(p => p.week_number < competition.current_week).length > 0 && (
-              <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+              <div className="rounded-3xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
                 <div className="px-5 py-3 border-b" style={{ borderColor: "var(--border)" }}>
                   <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>My Previous Picks</p>
                 </div>
                 <div className="divide-y" style={{ borderColor: "var(--border)" }}>
                   {myPicks.filter(p => p.week_number < competition.current_week).sort((a, b) => a.week_number - b.week_number).map(p => (
-                    <div key={p.id} className="flex items-center justify-between px-5 py-2.5">
+                    <div key={p.id} className="flex items-center justify-between px-5 py-3">
                       <div>
                         <span className="text-xs" style={{ color: "var(--text-muted)" }}>Week {p.week_number}</span>
                         <span className="text-sm font-medium ml-3" style={{ color: "var(--text-primary)" }}>{p.team}</span>
@@ -199,7 +199,7 @@ export default function LmsContent() {
             )}
 
             {!iAmEliminated && (
-              <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+              <div className="rounded-3xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
                 <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
                   <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>Week {competition.current_week} — Pick your team</p>
                   <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Greyed = already used · Crossed out = lost with that team</p>
@@ -221,7 +221,7 @@ export default function LmsContent() {
                   />
                   {!deadlinePassed && (
                     <button onClick={submitPick} disabled={!selectedTeam || submitting}
-                      className="w-full mt-4 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm disabled:opacity-50">
+                      className="w-full mt-4 h-14 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-base disabled:opacity-50 transition-all active:scale-95">
                       {submitting ? "Saving..." : myPick ? `Update Pick: ${selectedTeam}` : `Submit Pick: ${selectedTeam || "Select a team"}`}
                     </button>
                   )}
@@ -244,7 +244,7 @@ export default function LmsContent() {
         )}
 
         {activeTab === "rules" && (
-          <div className="rounded-2xl border p-5 space-y-3" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+          <div className="rounded-3xl border p-5 space-y-3" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
             <div className="flex items-center gap-2 mb-2">
               <BookOpen className="w-4 h-4 text-purple-500" />
               <h2 className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>Competition Rules</h2>
@@ -268,10 +268,10 @@ export default function LmsContent() {
         )}
 
         {activeTab === "admin" && (isOwner || isAdmin) && (
-          <div className="rounded-2xl border p-5" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+          <div className="rounded-3xl border p-5" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
             <p className="font-semibold text-sm mb-3" style={{ color: "var(--text-primary)" }}>Admin Actions</p>
             <a href={`/admin/lms-results?competitionId=${competition.id}&groupId=${groupId}`}
-              className="block w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold text-center transition-colors">
+              className="block w-full h-14 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white text-base font-bold text-center leading-[3.5rem] transition-all active:scale-95">
               Enter Week {competition.current_week} Results →
             </a>
           </div>
