@@ -58,7 +58,7 @@ export function LeaderboardCard({
   return (
     <div className="space-y-4">
       {status === "completed" && leaderboard.length > 0 && (
-        <div className="rounded-2xl border-2 border-amber-400 bg-amber-50 px-5 py-4 flex items-center gap-3">
+        <div className="rounded-3xl border-2 border-amber-400 bg-amber-50 px-5 py-4 flex items-center gap-3">
           <span className="text-3xl flex-shrink-0">🏆</span>
           <div className="flex-1">
             <p className="font-bold text-amber-800 text-base">
@@ -74,9 +74,10 @@ export function LeaderboardCard({
         <div className="flex gap-2 overflow-x-auto pb-2">
           <button
             onClick={() => setSelectedMeetingId(null)}
-            className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${
-              selectedMeetingId === null ? "bg-green-500 text-white" : "bg-white border border-slate-200 text-slate-500"
+            className={`flex-shrink-0 px-5 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap transition-colors active:scale-95 ${
+              selectedMeetingId === null ? "bg-green-500 text-white" : ""
             }`}
+            style={selectedMeetingId !== null ? { background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-secondary)" } : {}}
           >
             Overall
           </button>
@@ -84,9 +85,10 @@ export function LeaderboardCard({
             <button
               key={m.id}
               onClick={() => setSelectedMeetingId(m.id)}
-              className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${
-                selectedMeetingId === m.id ? "bg-green-500 text-white" : "bg-white border border-slate-200 text-slate-500"
+              className={`flex-shrink-0 px-5 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap transition-colors active:scale-95 ${
+                selectedMeetingId === m.id ? "bg-green-500 text-white" : ""
               }`}
+              style={selectedMeetingId !== m.id ? { background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-secondary)" } : {}}
             >
               {m.name}
             </button>
@@ -97,29 +99,29 @@ export function LeaderboardCard({
       {isOwnerOrAdmin && leaderboard.length > 0 && (
         <button
           onClick={handleShareLeaderboard}
-          className="w-full py-3 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2"
+          className="w-full py-4 rounded-2xl font-bold text-base text-white flex items-center justify-center gap-2 transition-transform active:scale-95"
           style={{ background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)" }}
         >
           Share Leaderboard
         </button>
       )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-200 flex items-center gap-2">
+      <div className="rounded-3xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+        <div className="px-5 py-4 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
           <Trophy className="w-4 h-4 text-green-500" />
-          <h2 className="font-semibold text-sm text-slate-900">
+          <h2 className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>
             {currentMeeting ? `${currentMeeting.name} Leaderboard` : "Overall Leaderboard"}
           </h2>
         </div>
         {leaderboard.length === 0 ? (
-          <div className="px-5 py-8 text-center text-sm text-slate-400">No entries yet.</div>
+          <div className="px-5 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>No entries yet.</div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y" style={{ borderColor: "var(--border)" }}>
             {leaderboard.map((row, i) => (
-              <div key={row.email} className="flex items-center justify-between px-5 py-3">
+              <div key={row.email} className="flex items-center justify-between px-5 py-3.5">
                 <div className="flex items-center gap-3">
                   <span
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
                       i === 0
                         ? "bg-green-100 text-green-600"
                         : i === 1
@@ -131,7 +133,7 @@ export function LeaderboardCard({
                   >
                     {i + 1}
                   </span>
-                  <span className="text-sm font-medium text-slate-900">
+                  <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
                     {row.participantName || row.email.split("@")[0]}
                     {row.email === currentUserEmail && (
                       <span className="ml-1 text-xs text-green-500">(you)</span>
