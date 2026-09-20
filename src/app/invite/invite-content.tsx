@@ -65,7 +65,7 @@ export default function InviteContent() {
         <p className="text-slate-300 text-sm">This competition invite link has expired or is invalid.</p>
       </div>
       <button onClick={() => router.push("/")}
-        className="px-6 py-3 rounded-2xl text-sm font-semibold text-white border border-white/30 hover:bg-white/10 transition-colors">
+        className="px-6 py-3 rounded-2xl text-sm font-semibold text-white border border-white/30 hover:bg-white/10 transition-colors active:scale-95">
         ← Go Home
       </button>
       <p className="text-white/30 text-xs mt-8">Powered by Derby Day 🏇</p>
@@ -85,8 +85,10 @@ export default function InviteContent() {
     <div className="fixed inset-0 overflow-y-auto flex flex-col items-center"
       style={{
         background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%)",
-        paddingTop: "env(safe-area-inset-top)",
-        paddingBottom: "env(safe-area-inset-bottom)",
+        paddingTop: "var(--safe-top, 0px)",
+        paddingBottom: "var(--safe-bottom, 0px)",
+        paddingLeft: "var(--safe-left, 0px)",
+        paddingRight: "var(--safe-right, 0px)",
       }}>
       <div className="w-full max-w-sm px-5 py-10 flex flex-col items-center gap-6">
 
@@ -109,7 +111,7 @@ export default function InviteContent() {
         </div>
 
         <div className="grid grid-cols-2 gap-3 w-full">
-          <div className="rounded-2xl p-4 flex flex-col gap-1"
+          <div className="rounded-3xl p-4 flex flex-col gap-1"
             style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
             <span className="text-lg">📅</span>
             <p className="text-white/50 text-xs font-semibold uppercase tracking-wide">Meetings</p>
@@ -120,20 +122,20 @@ export default function InviteContent() {
               {meetings.length === 0 && <p>TBC</p>}
             </div>
           </div>
-          <div className="rounded-2xl p-4 flex flex-col gap-1"
+          <div className="rounded-3xl p-4 flex flex-col gap-1"
             style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
             <span className="text-lg">👥</span>
             <p className="text-white/50 text-xs font-semibold uppercase tracking-wide">Players</p>
             <p className="text-white font-bold text-lg">{playerCount}</p>
             <p className="text-white/40 text-xs">{playerCount} joined</p>
           </div>
-          <div className="rounded-2xl p-4 flex flex-col gap-1"
+          <div className="rounded-3xl p-4 flex flex-col gap-1"
             style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
             <span className="text-lg">🗓️</span>
             <p className="text-white/50 text-xs font-semibold uppercase tracking-wide">First Race</p>
             <p className="text-white font-bold text-base leading-tight">{firstMeetingDate}</p>
           </div>
-          <div className="rounded-2xl p-4 flex flex-col gap-1"
+          <div className="rounded-3xl p-4 flex flex-col gap-1"
             style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
             <span className="text-lg">⏰</span>
             <p className="text-white/50 text-xs font-semibold uppercase tracking-wide">Deadline</p>
@@ -149,7 +151,7 @@ export default function InviteContent() {
         )}
 
         <button onClick={handleJoin}
-          className="w-full py-4 rounded-2xl text-lg font-black text-white transition-transform active:scale-95 join-pulse">
+          className="w-full h-16 rounded-2xl text-lg font-black text-white transition-transform active:scale-95 join-pulse">
           🎯 Join This Competition
         </button>
 
