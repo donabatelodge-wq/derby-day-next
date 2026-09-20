@@ -88,13 +88,18 @@ export default function JoinContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "var(--bg)" }}>
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center px-5"
+      style={{
+        background: "var(--bg)",
+        paddingTop: "calc(1.5rem + var(--safe-top, 0px))",
+        paddingBottom: "calc(1.5rem + var(--safe-bottom, 0px))",
+      }}>
+      <div className="w-full max-w-md">
 
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">🎯</div>
-          <h1 className="text-2xl font-bold text-slate-900">Join a Competition</h1>
-          <p className="text-sm text-slate-500 mt-1">Enter the invite code and PIN from the group owner</p>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Join a Competition</h1>
+          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Enter the invite code and PIN from the group owner</p>
         </div>
 
         {previewGroup && (
@@ -113,47 +118,52 @@ export default function JoinContent() {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Your display name</label>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Your display name</label>
             <input placeholder="How your name appears on the leaderboard" value={joinName} onChange={e => setJoinName(e.target.value)}
-              className="w-full h-11 rounded-xl border border-slate-200 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+              className="w-full h-14 rounded-2xl border px-4 text-base focus:outline-none focus:ring-2 focus:ring-green-400"
+              style={{ background: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-primary)" }} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Invite code</label>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>Invite code</label>
             <input placeholder="e.g. A1234" value={joinCode} onChange={e => { setJoinCode(e.target.value.toUpperCase()); setJoinError(""); }}
-              maxLength={6} className="w-full h-11 rounded-xl border border-slate-200 px-4 text-sm font-mono uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-green-400" />
+              maxLength={6}
+              className="w-full h-14 rounded-2xl border px-4 text-base font-mono uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-green-400"
+              style={{ background: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-primary)" }} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">PIN</label>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>PIN</label>
             <input placeholder="4-digit PIN" value={joinPin} onChange={e => setJoinPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
               maxLength={4} inputMode="numeric"
-              className="w-full h-11 rounded-xl border border-slate-200 px-4 text-sm font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-green-400" />
+              className="w-full h-14 rounded-2xl border px-4 text-base font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-green-400"
+              style={{ background: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-primary)" }} />
           </div>
 
           {joinError && (
-            <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
               {joinError}
             </div>
           )}
 
           <button onClick={handleJoin}
             disabled={!joinCode.trim() || !joinName.trim() || joinPin.length !== 4 || joining}
-            className="w-full h-12 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold text-sm disabled:opacity-50 transition-colors">
+            className="w-full h-14 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-bold text-base disabled:opacity-50 transition-all active:scale-95">
             {joining ? "Joining..." : "Join Competition"}
           </button>
 
           <div className="flex items-center gap-3 py-2">
-            <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-xs text-slate-400">or</span>
-            <div className="flex-1 h-px bg-slate-200" />
+            <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>or</span>
+            <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
           </div>
 
           <button onClick={() => router.push("/group/new")}
-            className="w-full h-12 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-green-300 transition-colors flex items-center justify-center gap-2">
+            className="w-full h-14 rounded-2xl border-2 font-bold text-base transition-colors flex items-center justify-center gap-2 active:scale-95"
+            style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}>
             <Users className="w-4 h-4" /> Create your own competition
           </button>
         </div>
 
-        <p className="text-center text-xs text-slate-400 mt-6">
+        <p className="text-center text-xs mt-6" style={{ color: "var(--text-muted)" }}>
           Signed in as <span className="font-medium">{userEmail}</span>
         </p>
       </div>
