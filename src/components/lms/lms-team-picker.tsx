@@ -14,7 +14,7 @@ interface Props {
 export default function LmsTeamPicker({ usedTeams = [], eliminatedTeams = [], currentPick, onPick, disabled, teams }: Props) {
   const teamList = teams && teams.length > 0 ? teams : [];
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 gap-3">
       {teamList.map(team => {
         const isUsed = usedTeams.includes(team) && team !== currentPick;
         const isEliminated = eliminatedTeams.includes(team);
@@ -25,7 +25,8 @@ export default function LmsTeamPicker({ usedTeams = [], eliminatedTeams = [], cu
           <button key={team}
             onClick={() => !isUnavailable && !disabled && onPick(team)}
             disabled={isUnavailable || disabled}
-            className={`relative flex items-center justify-between px-3 py-3 rounded-xl border text-sm font-medium transition-all
+            className={`relative flex items-center justify-between px-4 py-4 rounded-2xl border text-base font-medium transition-all
+              ${!isUnavailable && !disabled ? "active:scale-95" : ""}
               ${isSelected ? "border-purple-500 bg-purple-50 text-purple-700" : ""}
               ${isUsed ? "opacity-40 cursor-not-allowed border-slate-200" : ""}
               ${isEliminated ? "opacity-30 cursor-not-allowed border-slate-200 line-through" : ""}
@@ -34,9 +35,9 @@ export default function LmsTeamPicker({ usedTeams = [], eliminatedTeams = [], cu
             style={!isSelected && !isUnavailable ? { background: "var(--bg-card)", color: "var(--text-primary)" } : {}}
           >
             <span className="truncate">{team}</span>
-            {isSelected && <CheckCircle2 className="w-4 h-4 text-purple-500 flex-shrink-0 ml-1" />}
-            {isUsed && <Lock className="w-3.5 h-3.5 text-slate-300 flex-shrink-0 ml-1" />}
-            {isEliminated && <XCircle className="w-3.5 h-3.5 text-red-300 flex-shrink-0 ml-1" />}
+            {isSelected && <CheckCircle2 className="w-5 h-5 text-purple-500 flex-shrink-0 ml-1" />}
+            {isUsed && <Lock className="w-4 h-4 text-slate-300 flex-shrink-0 ml-1" />}
+            {isEliminated && <XCircle className="w-4 h-4 text-red-300 flex-shrink-0 ml-1" />}
           </button>
         );
       })}
