@@ -140,7 +140,7 @@ export default function AdminMeetingsContent() {
           </div>
           {activeTab === "meetings" && (
             <button onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold">
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold">
               <Plus className="w-4 h-4" /> New Meeting
             </button>
           )}
@@ -165,7 +165,7 @@ export default function AdminMeetingsContent() {
               </div>
             ) : (
               lmsCompetitions.map(comp => (
-                <div key={comp.id} className="rounded-2xl p-4 border flex items-center justify-between gap-3"
+                <div key={comp.id} className="rounded-3xl p-4 border flex items-center justify-between gap-3"
                   style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
                   <div>
                     <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{comp.name}</p>
@@ -184,23 +184,23 @@ export default function AdminMeetingsContent() {
         {activeTab === "meetings" && (
           <div>
             {showForm && (
-              <div className="rounded-2xl p-5 border mb-5 space-y-4" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+              <div className="rounded-3xl p-5 border mb-5 space-y-4" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
                 <h2 className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>New Meeting</h2>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Meeting Name *</label>
                   <input placeholder="e.g. Glorious Goodwood Day 1" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                    className="w-full h-10 rounded-xl border border-slate-200 px-3 text-sm" />
+                    className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Date *</label>
                     <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
-                      className="w-full h-10 rounded-xl border border-slate-200 px-3 text-sm" />
+                      className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm" />
                   </div>
                   <div>
                     <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Status</label>
                     <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}
-                      className="w-full h-10 rounded-xl border border-slate-200 px-3 text-sm bg-white">
+                      className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm bg-white">
                       <option value="upcoming">Upcoming</option>
                       <option value="open">Open for entries</option>
                       <option value="closed">Closed</option>
@@ -211,14 +211,14 @@ export default function AdminMeetingsContent() {
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Venue</label>
                   <input placeholder="Optional" value={form.venue} onChange={e => setForm({ ...form, venue: e.target.value })}
-                    className="w-full h-10 rounded-xl border border-slate-200 px-3 text-sm" />
+                    className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm" />
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>
                     <Clock className="w-3 h-3 inline mr-1" />Auto-close time
                   </label>
                   <input type="datetime-local" value={form.close_at} onChange={e => setForm({ ...form, close_at: e.target.value })}
-                    className="w-full h-10 rounded-xl border border-slate-200 px-3 text-sm" />
+                    className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm" />
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-2 block" style={{ color: "var(--text-muted)" }}>Points per placing</label>
@@ -228,18 +228,18 @@ export default function AdminMeetingsContent() {
                         <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>{label}</label>
                         <input type="number" min="0" value={(form as any)[key]}
                           onChange={e => setForm({ ...form, [key]: Number(e.target.value) })}
-                          className="w-full h-9 rounded-xl border border-slate-200 px-2 text-sm text-center" />
+                          className="w-full h-11 rounded-xl border border-slate-200 px-2 text-sm text-center" />
                       </div>
                     ))}
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={handleCreate} disabled={!form.name || !form.date || saving}
-                    className="flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold disabled:opacity-50">
+                    className="flex-1 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold disabled:opacity-50">
                     {saving ? "Saving..." : "Create Meeting"}
                   </button>
                   <button onClick={() => { setShowForm(false); setForm(EMPTY_FORM); }}
-                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-600">Cancel</button>
+                    className="px-4 py-3.5 rounded-2xl border border-slate-200 text-sm text-slate-600">Cancel</button>
                 </div>
               </div>
             )}
@@ -254,7 +254,7 @@ export default function AdminMeetingsContent() {
                 {meetings.map(m => {
                   const cfg = STATUS_CONFIG[m.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.upcoming;
                   return (
-                    <div key={m.id} className="rounded-2xl p-5 border" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+                    <div key={m.id} className="rounded-3xl p-5 border" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
