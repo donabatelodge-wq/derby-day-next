@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { CheckCircle2, XCircle, ArrowLeft, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { PL_TEAMS } from "@/lib/lms-teams";
 
 export default function AdminLmsResultsContent() {
   const searchParams = useSearchParams();
@@ -126,7 +127,7 @@ export default function AdminLmsResultsContent() {
     </div>
   );
 
-  const teams = competition.teams || [];
+  const teams = competition.teams?.length > 0 ? competition.teams : PL_TEAMS;
 
   return (
     <div className="min-h-screen pb-36" style={{ background: "var(--bg)" }}>
