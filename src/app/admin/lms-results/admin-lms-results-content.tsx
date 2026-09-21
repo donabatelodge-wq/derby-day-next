@@ -21,20 +21,26 @@ export default function AdminLmsResultsContent() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [authorised, setAuthorised] = useState(false);
 
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/login"); return; }
       const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-      if (profile?.role !== "admin") { router.push("/"); return; }
-      setIsAdmin(true);
+      const globalAdmin = profile?.role === "admin";
+      setIsAdmin(globalAdmin);
 
       const [{ data: comp }, { data: grp }, { data: allPicks }] = await Promise.all([
         supabase.from("lms_competitions").select("*").eq("id", competitionId).single(),
         supabase.from("groups").select("*").eq("id", groupId).single(),
         supabase.from("lms_picks").select("*").eq("competition_id", competitionId),
       ]);
+
+      const isOwner = grp?.owner_email === user.email;
+      if (!globalAdmin && !isOwner) { router.push("/"); return; }
+      setAuthorised(true);
+
       setCompetition(comp);
       setGroup(grp);
       setPicks(allPicks ?? []);
@@ -108,7 +114,7 @@ export default function AdminLmsResultsContent() {
     router.push(`/group/${groupId}`);
   };
 
-  if (loading || !isAdmin) return (
+  if (loading || !authorised) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)" }}>
       <div className="w-8 h-8 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
     </div>
