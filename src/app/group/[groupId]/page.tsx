@@ -391,7 +391,19 @@ export default function GroupDetailPage() {
     const alive = participants.filter(p => p.status === "alive").sort((a, b) => b.weeksAlive - a.weeksAlive);
     const eliminated = participants.filter(p => p.status === "eliminated").sort((a, b) => b.weeksAlive - a.weeksAlive);
     return (
-      <div className="rounded-3xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+      <div className="space-y-4">
+        {comp && (isOwner || isAdmin) && (
+          <Link href={`/admin/lms-results?competitionId=${comp.id}&groupId=${group.id}`}
+            className="flex items-center justify-between gap-3 rounded-3xl p-5 text-white transition-all active:scale-95"
+            style={{ background: "linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)" }}>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-purple-200">Competition Admin</p>
+              <p className="font-bold text-base mt-0.5">Enter Week {comp.current_week} Results</p>
+            </div>
+            <span className="text-2xl flex-shrink-0">→</span>
+          </Link>
+        )}
+        <div className="rounded-3xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
         {comp && (
           <div className="px-6 py-4 border-b flex items-center" style={{ borderColor: "var(--border)", background: "rgba(168,85,247,0.05)" }}>
             <Swords className="w-4 h-4 text-purple-500 mr-2" />
@@ -441,6 +453,7 @@ export default function GroupDetailPage() {
         {alive.length === 0 && eliminated.length === 0 && (
           <div className="px-6 py-10 text-center text-sm" style={{ color: "var(--text-muted)" }}>No participants yet.</div>
         )}
+        </div>
       </div>
     );
   };
