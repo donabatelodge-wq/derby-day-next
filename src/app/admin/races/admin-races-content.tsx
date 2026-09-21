@@ -363,7 +363,7 @@ export default function AdminRacesContent() {
           {meeting?.date && <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>{format(new Date(meeting.date), "EEEE, d MMMM yyyy")}</p>}
         </div>
 
-        <div className="rounded-2xl p-5 border mb-5" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+        <div className="rounded-3xl p-5 border mb-5" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
           <div className="flex items-center gap-2 mb-2">
             <Lock className="w-4 h-4 text-amber-500" />
             <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>Player Join Deadline</p>
@@ -374,7 +374,7 @@ export default function AdminRacesContent() {
               <input type="datetime-local" value={joinDeadline} onChange={e => setJoinDeadline(e.target.value)}
                 className="flex-1 rounded-xl border border-slate-200 h-9 text-sm px-3" />
               <button onClick={handleSaveJoinDeadline} disabled={savingDeadline}
-                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-semibold disabled:opacity-50">
+                className="px-5 py-3 rounded-2xl bg-slate-900 text-white text-sm font-semibold disabled:opacity-50">
                 {savingDeadline ? "Saving..." : "Save"}
               </button>
               <button onClick={() => setEditingDeadline(false)} className="px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600">Cancel</button>
@@ -391,7 +391,7 @@ export default function AdminRacesContent() {
           )}
         </div>
 
-        <div className="rounded-2xl p-5 border mb-5" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+        <div className="rounded-3xl p-5 border mb-5" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-blue-500" />
@@ -409,24 +409,24 @@ export default function AdminRacesContent() {
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Course name</label>
                   <input placeholder="e.g. Goodwood, Galway" value={apiCourse} onChange={e => setApiCourse(e.target.value)}
-                    className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                    className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Date</label>
                   <input type="date" value={apiDate} onChange={e => setApiDate(e.target.value)}
-                    className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                    className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
                 </div>
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Racing API Username</label>
                 <input placeholder="Your username" value={apiUsername} onChange={e => setApiUsername(e.target.value)}
-                  className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                  className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Racing API Password</label>
                 <div className="relative">
                   <input type={showPassword ? "text" : "password"} placeholder="Your password" value={apiPassword} onChange={e => setApiPassword(e.target.value)}
-                    className="w-full h-9 rounded-xl border border-slate-200 px-3 pr-10 text-sm" />
+                    className="w-full h-11 rounded-xl border border-slate-200 px-3 pr-10 text-sm" />
                   <button onClick={() => setShowPassword(s => !s)} className="absolute right-3 top-2 text-slate-400">
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -435,7 +435,7 @@ export default function AdminRacesContent() {
               {apiImportError && <p className="text-xs text-red-500 rounded-lg bg-red-50 px-3 py-2">{apiImportError}</p>}
               {apiImportResult && <p className="text-xs text-emerald-600 rounded-lg bg-emerald-50 px-3 py-2">✅ {apiImportResult.racesImported} races imported from {apiImportResult.course}</p>}
               <button onClick={handleApiImport} disabled={!apiCourse.trim() || !apiUsername.trim() || !apiPassword.trim() || apiImporting}
-                className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+                className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
                 <Zap className="w-4 h-4" />
                 {apiImporting ? "Importing..." : "Import Runners"}
               </button>
@@ -443,7 +443,7 @@ export default function AdminRacesContent() {
           )}
         </div>
 
-        <div className="rounded-2xl p-5 border mb-5" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+        <div className="rounded-3xl p-5 border mb-5" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               <ClipboardPaste className="w-4 h-4 text-purple-500" />
@@ -463,24 +463,24 @@ export default function AdminRacesContent() {
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Race Number</label>
                   <input type="number" value={sheetsForm.race_number} onChange={e => setSheetsForm(f => ({ ...f, race_number: e.target.value }))}
-                    className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                    className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Race Time</label>
                   <input placeholder="e.g. 13:30" value={sheetsForm.race_time} onChange={e => setSheetsForm(f => ({ ...f, race_time: e.target.value }))}
-                    className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                    className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Race Name</label>
                   <input placeholder="Optional" value={sheetsForm.race_name} onChange={e => setSheetsForm(f => ({ ...f, race_name: e.target.value }))}
-                    className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                    className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Distance</label>
                   <input placeholder="Optional" value={sheetsForm.distance} onChange={e => setSheetsForm(f => ({ ...f, distance: e.target.value }))}
-                    className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                    className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
                 </div>
               </div>
               <div>
@@ -496,7 +496,7 @@ export default function AdminRacesContent() {
               </div>
               {sheetsError && <p className="text-xs text-red-500 rounded-lg bg-red-50 px-3 py-2">{sheetsError}</p>}
               <button onClick={handleSheetsCreateRace} disabled={!sheetsForm.race_number.trim() || sheetsPreviewCount === 0 || sheetsSaving}
-                className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+                className="w-full py-3.5 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
                 <ClipboardPaste className="w-4 h-4" />
                 {sheetsSaving ? "Creating..." : `Create Race${sheetsPreviewCount > 0 ? ` (${sheetsPreviewCount} runners)` : ""}`}
               </button>
@@ -504,7 +504,7 @@ export default function AdminRacesContent() {
           )}
         </div>
 
-        <div className="rounded-2xl p-5 border mb-5" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+        <div className="rounded-3xl p-5 border mb-5" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               <RefreshCw className="w-4 h-4 text-emerald-500" />
@@ -526,15 +526,15 @@ export default function AdminRacesContent() {
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Racing API Username</label>
                 <input placeholder="Your username" value={resultsUsername} onChange={e => setResultsUsername(e.target.value)}
-                  className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                  className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Racing API Password</label>
                 <input type="password" placeholder="Your password" value={resultsPassword} onChange={e => setResultsPassword(e.target.value)}
-                  className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                  className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
               </div>
               <button onClick={handleFetchResults} disabled={!resultsUsername.trim() || !resultsPassword.trim() || fetchingResults}
-                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+                className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
                 <RefreshCw className={`w-4 h-4 ${fetchingResults ? "animate-spin" : ""}`} />
                 {fetchingResults ? "Fetching..." : "Fetch Results & Auto-Score"}
               </button>
@@ -545,30 +545,30 @@ export default function AdminRacesContent() {
         <div className="flex items-center justify-between mb-4">
           <p className="font-semibold" style={{ color: "var(--text-primary)" }}>Races ({races.length})</p>
           <button onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold">
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold">
             <Plus className="w-4 h-4" /> Add Race Manually
           </button>
         </div>
 
         {showForm && (
-          <div className="rounded-2xl p-5 border mb-5 space-y-4" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+          <div className="rounded-3xl p-5 border mb-5 space-y-4" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
             <h3 className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>New Race</h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Race Number</label>
                 <input type="number" value={form.race_number} onChange={e => setForm(f => ({ ...f, race_number: e.target.value }))}
-                  className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                  className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Race Time</label>
                 <input placeholder="e.g. 13:30" value={form.race_time} onChange={e => setForm(f => ({ ...f, race_time: e.target.value }))}
-                  className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                  className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
               </div>
             </div>
             <div>
               <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Race Name</label>
               <input placeholder="Optional" value={form.race_name} onChange={e => setForm(f => ({ ...f, race_name: e.target.value }))}
-                className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
             </div>
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Runners</p>
@@ -594,11 +594,11 @@ export default function AdminRacesContent() {
             </div>
             <div className="flex gap-2">
               <button onClick={handleCreateRace} disabled={!form.race_number || saving}
-                className="flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold disabled:opacity-50">
+                className="flex-1 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold disabled:opacity-50">
                 {saving ? "Saving..." : "Create Race"}
               </button>
               <button onClick={() => { setShowForm(false); setForm(EMPTY_FORM); }}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-600">Cancel</button>
+                className="px-4 py-3.5 rounded-2xl border border-slate-200 text-sm text-slate-600">Cancel</button>
             </div>
           </div>
         )}
@@ -611,7 +611,7 @@ export default function AdminRacesContent() {
         ) : (
           <div className="space-y-3">
             {races.map(race => (
-              <div key={race.id} className="rounded-2xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+              <div key={race.id} className="rounded-3xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
                 <div className="flex items-center justify-between px-5 py-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -645,12 +645,12 @@ export default function AdminRacesContent() {
                           <div>
                             <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Race Number</label>
                             <input type="number" value={editForm.race_number} onChange={e => setEditForm((f: any) => ({ ...f, race_number: e.target.value }))}
-                              className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                              className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
                           </div>
                           <div>
                             <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Race Name</label>
                             <input value={editForm.race_name} onChange={e => setEditForm((f: any) => ({ ...f, race_name: e.target.value }))}
-                              className="w-full h-9 rounded-xl border border-slate-200 px-3 text-sm" />
+                              className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
                           </div>
                         </div>
                         <div className="space-y-2">
@@ -674,10 +674,10 @@ export default function AdminRacesContent() {
                         </div>
                         <div className="flex gap-2">
                           <button onClick={() => handleSaveEdit(race.id)} disabled={savingEdit}
-                            className="flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold disabled:opacity-50">
+                            className="flex-1 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold disabled:opacity-50">
                             {savingEdit ? "Saving..." : "Save Changes"}
                           </button>
-                          <button onClick={() => setEditingRace(null)} className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-600">Cancel</button>
+                          <button onClick={() => setEditingRace(null)} className="px-4 py-3.5 rounded-2xl border border-slate-200 text-sm text-slate-600">Cancel</button>
                         </div>
                       </div>
                     ) : (
@@ -716,7 +716,7 @@ export default function AdminRacesContent() {
                                 <label className="text-xs mb-1 block font-medium" style={{ color: "var(--text-muted)" }}>{label}</label>
                                 <select value={results[race.id]?.[field] || ""}
                                   onChange={e => setResults(prev => ({ ...prev, [race.id]: { ...prev[race.id], [field]: e.target.value } }))}
-                                  className="w-full h-9 rounded-xl border border-slate-200 px-2 text-sm bg-white">
+                                  className="w-full h-11 rounded-xl border border-slate-200 px-2 text-sm bg-white">
                                   <option value="">—</option>
                                   {(race.horses || []).map((h: any) => (
                                     <option key={h.name} value={h.name}>{h.number}. {h.name}</option>
@@ -772,7 +772,7 @@ export default function AdminRacesContent() {
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider mb-2 text-slate-500">Replace With</p>
                     <select value={nonRunnerReplacement} onChange={e => setNonRunnerReplacement(e.target.value)}
-                      className="w-full h-10 rounded-xl border border-slate-200 px-3 text-sm bg-white">
+                      className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm bg-white">
                       <option value="">— Select replacement —</option>
                       {(races.find(r => r.id === nonRunnerPanel.raceId)?.horses || [])
                         .filter((h: any) => h.name !== nonRunnerPanel.horseName)
@@ -781,10 +781,10 @@ export default function AdminRacesContent() {
                   </div>
                   <div className="flex gap-2">
                     <button onClick={handleApplyNonRunner} disabled={!nonRunnerReplacement || applyingNonRunner}
-                      className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold disabled:opacity-50">
+                      className="flex-1 py-3.5 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold disabled:opacity-50">
                       {applyingNonRunner ? "Applying..." : "Apply Replacement"}
                     </button>
-                    <button onClick={() => setNonRunnerPanel(null)} className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-600">Cancel</button>
+                    <button onClick={() => setNonRunnerPanel(null)} className="px-4 py-3.5 rounded-2xl border border-slate-200 text-sm text-slate-600">Cancel</button>
                   </div>
                 </>
               )}
