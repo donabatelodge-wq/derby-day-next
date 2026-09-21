@@ -7,13 +7,7 @@ import { Swords, AlertCircle, CheckCircle2, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import LmsTeamPicker from "@/components/lms/lms-team-picker";
 import LmsStandings from "@/components/lms/lms-standings";
-
-const PL_TEAMS = [
-  "Arsenal","Aston Villa","Bournemouth","Brentford","Brighton","Chelsea",
-  "Crystal Palace","Everton","Fulham","Ipswich Town","Leicester City","Liverpool",
-  "Manchester City","Manchester United","Newcastle United","Nottingham Forest",
-  "Southampton","Tottenham Hotspur","West Ham United","Wolverhampton Wanderers"
-];
+import { PL_TEAMS } from "@/lib/lms-teams";
 
 export default function LmsContent() {
   const params = useParams();
