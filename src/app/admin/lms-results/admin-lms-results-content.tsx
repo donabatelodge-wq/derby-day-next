@@ -63,14 +63,9 @@ export default function AdminLmsResultsContent() {
   );
   const alreadyEntered = competition?.weeks?.some((w: any) => w.week_number === currentWeek && w.results_entered);
 
-  const toggleTeam = (team: string) => {
+  const setTeamState = (team: string, value: "win" | "loss") => {
     if (alreadyEntered) return;
-    setTeamStates(prev => {
-      const cur = prev[team];
-      if (!cur) return { ...prev, [team]: "win" };
-      if (cur === "win") return { ...prev, [team]: "loss" };
-      return { ...prev, [team]: null };
-    });
+    setTeamStates(prev => ({ ...prev, [team]: prev[team] === value ? null : value }));
   };
 
   const winTeams = Object.entries(teamStates).filter(([, v]) => v === "win").map(([k]) => k);
@@ -161,33 +156,39 @@ export default function AdminLmsResultsContent() {
         </div>
 
         <p className="text-xs text-center" style={{ color: "var(--text-muted)" }}>
-          Tap once → <span className="text-green-600 font-medium">Win ✓</span> &nbsp;|&nbsp;
-          Tap twice → <span className="text-red-600 font-medium">Draw/Loss ✗</span> &nbsp;|&nbsp;
-          Tap again → Unmark &nbsp;|&nbsp;
-          <span className="text-yellow-600 font-medium">Yellow</span> = picked this week
+          Tap <span className="text-green-600 font-semibold">W</span> = Win, stay in &nbsp;|&nbsp;
+          Tap <span className="text-red-600 font-semibold">D/L</span> = Draw/Loss, out &nbsp;|&nbsp;
+          <span className="text-yellow-600 font-medium">Yellow border</span> = picked this week
         </p>
 
         <div className="space-y-2">
           {teams.map((team: string) => {
             const state = teamStates[team] || null;
             const isPicked = activePickedTeams.has(team);
-            let borderColor = "#e2e8f0";
-            let bg = "#ffffff";
-            let textColor = "#475569";
-            if (state === "win") { borderColor = "#22c55e"; bg = "#f0fdf4"; textColor = "#166534"; }
-            else if (state === "loss") { borderColor = "#ef4444"; bg = "#fef2f2"; textColor = "#991b1b"; }
-            else if (isPicked) { borderColor = "#facc15"; }
+            const borderColor = isPicked && !state ? "#facc15" : "#e2e8f0";
             return (
-              <button key={team} onClick={() => toggleTeam(team)} disabled={alreadyEntered}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left font-medium"
-                style={{ borderColor, background: bg, color: textColor, opacity: alreadyEntered ? 0.6 : 1 }}>
-                <span>{team}</span>
-                <span className="flex items-center gap-2">
-                  {isPicked && !state && <span className="text-xs text-yellow-600 font-semibold">picked</span>}
-                  {state === "win" && <CheckCircle2 className="w-5 h-5 text-green-600" />}
-                  {state === "loss" && <XCircle className="w-5 h-5 text-red-600" />}
-                </span>
-              </button>
+              <div key={team}
+                className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 transition-all"
+                style={{ borderColor, background: "#ffffff", opacity: alreadyEntered ? 0.6 : 1 }}>
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className="font-medium truncate" style={{ color: "#334155" }}>{team}</span>
+                  {isPicked && !state && <span className="text-xs text-yellow-600 font-semibold flex-shrink-0">picked</span>}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button onClick={() => setTeamState(team, "win")} disabled={alreadyEntered}
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-sm border-2 transition-all active:scale-95 ${
+                      state === "win" ? "bg-green-500 border-green-500 text-white" : "bg-green-50 border-green-200 text-green-600"
+                    }`}>
+                    {state === "win" ? <CheckCircle2 className="w-5 h-5" /> : "W"}
+                  </button>
+                  <button onClick={() => setTeamState(team, "loss")} disabled={alreadyEntered}
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-xs border-2 transition-all active:scale-95 ${
+                      state === "loss" ? "bg-red-500 border-red-500 text-white" : "bg-red-50 border-red-200 text-red-600"
+                    }`}>
+                    {state === "loss" ? <XCircle className="w-5 h-5" /> : "D/L"}
+                  </button>
+                </div>
+              </div>
             );
           })}
           {teams.length === 0 && (
