@@ -63,7 +63,7 @@ function ButtonSection({ title, showKey, form, setForm, labelKey, colorKey, emai
   labelKey?: string; colorKey?: string; emailKey?: string; staticNote?: string;
 }) {
   return (
-    <div className="rounded-2xl border p-4 space-y-3" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+    <div className="rounded-3xl border p-4 space-y-3" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
       <ToggleRow label={title} checked={!!form[showKey]} onChange={v => setForm({ ...form, [showKey]: v })} />
       {staticNote && (
         <p className="text-xs px-1" style={{ color: "var(--text-muted)" }}>{staticNote}</p>
@@ -72,7 +72,7 @@ function ButtonSection({ title, showKey, form, setForm, labelKey, colorKey, emai
         <div>
           <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Button label</label>
           <input value={form[labelKey] || ""} onChange={e => setForm({ ...form, [labelKey]: e.target.value })}
-            className="w-full h-10 rounded-xl border border-slate-200 px-3 text-sm" />
+            className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm" />
         </div>
       )}
       {colorKey && (
@@ -82,7 +82,7 @@ function ButtonSection({ title, showKey, form, setForm, labelKey, colorKey, emai
             <input type="color" value={form[colorKey] || "#22c55e"} onChange={e => setForm({ ...form, [colorKey]: e.target.value })}
               className="w-10 h-10 rounded-lg border border-slate-200" />
             <input value={form[colorKey] || ""} onChange={e => setForm({ ...form, [colorKey]: e.target.value })}
-              className="flex-1 h-10 rounded-xl border border-slate-200 px-3 text-sm font-mono" />
+              className="flex-1 h-12 rounded-xl border border-slate-200 px-3 text-sm font-mono" />
           </div>
         </div>
       )}
@@ -91,7 +91,7 @@ function ButtonSection({ title, showKey, form, setForm, labelKey, colorKey, emai
           <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Contact email</label>
           <input type="email" value={form[emailKey] || ""} onChange={e => setForm({ ...form, [emailKey]: e.target.value })}
             placeholder="you@example.com"
-            className="w-full h-10 rounded-xl border border-slate-200 px-3 text-sm" />
+            className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm" />
         </div>
       )}
     </div>
@@ -158,18 +158,18 @@ export default function AdminWelcomeContent() {
           <h1 className="text-2xl font-bold mt-0.5" style={{ color: "var(--text-primary)" }}>Welcome Page</h1>
         </div>
 
-        <div className="rounded-2xl border p-4 space-y-3" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+        <div className="rounded-3xl border p-4 space-y-3" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
           <ToggleRow label="Show title" checked={!!form.show_title} onChange={v => setForm({ ...form, show_title: v })} />
           <div>
             <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Title</label>
             <input value={form.title || ""} onChange={e => setForm({ ...form, title: e.target.value })}
-              className="w-full h-10 rounded-xl border border-slate-200 px-3 text-sm" />
+              className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm" />
           </div>
           <ToggleRow label="Show subtitle" checked={!!form.show_subtitle} onChange={v => setForm({ ...form, show_subtitle: v })} />
           <div>
             <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Subtitle</label>
             <input value={form.subtitle || ""} onChange={e => setForm({ ...form, subtitle: e.target.value })}
-              className="w-full h-10 rounded-xl border border-slate-200 px-3 text-sm" />
+              className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm" />
           </div>
         </div>
 
