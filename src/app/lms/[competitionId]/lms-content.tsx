@@ -128,10 +128,9 @@ export default function LmsContent() {
   const teams = competition.teams?.length > 0 ? competition.teams : PL_TEAMS;
 
   const tabs = [
-    ...(iAmEliminated ? [] : [{ id: "pick", label: "Pick Team" }]),
+    ...(iAmEliminated ? [] : [{ id: "pick", label: "Make My Pick" }]),
     { id: "standings", label: "Standings" },
     { id: "rules", label: "Rules" },
-    ...((isOwner || isAdmin) ? [{ id: "admin", label: "Admin" }] : []),
   ];
 
   return (
@@ -148,6 +147,18 @@ export default function LmsContent() {
             {group?.name} · Week {competition.current_week}
           </p>
         </div>
+
+        {(isOwner || isAdmin) && (
+          <a href={`/admin/lms-results?competitionId=${competition.id}&groupId=${groupId}`}
+            className="mb-6 flex items-center justify-between gap-3 rounded-3xl p-5 text-white transition-all active:scale-95"
+            style={{ background: "linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)" }}>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-purple-200">Competition Admin</p>
+              <p className="font-bold text-base mt-0.5">Enter Week {competition.current_week} Results</p>
+            </div>
+            <span className="text-2xl flex-shrink-0">→</span>
+          </a>
+        )}
 
         {iAmEliminated && (
           <div className="mb-6 rounded-3xl p-5 bg-red-50 border border-red-200 flex items-center gap-3">
@@ -261,15 +272,6 @@ export default function LmsContent() {
           </div>
         )}
 
-        {activeTab === "admin" && (isOwner || isAdmin) && (
-          <div className="rounded-3xl border p-5" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
-            <p className="font-semibold text-sm mb-3" style={{ color: "var(--text-primary)" }}>Admin Actions</p>
-            <a href={`/admin/lms-results?competitionId=${competition.id}&groupId=${groupId}`}
-              className="block w-full h-14 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white text-base font-bold text-center leading-[3.5rem] transition-all active:scale-95">
-              Enter Week {competition.current_week} Results →
-            </a>
-          </div>
-        )}
       </div>
     </div>
   );
