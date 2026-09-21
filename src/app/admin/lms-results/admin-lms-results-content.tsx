@@ -198,8 +198,11 @@ export default function AdminLmsResultsContent() {
       </div>
 
       {!alreadyEntered && (
-        <div className="fixed bottom-0 left-0 right-0 px-4 pt-3"
-          style={{ background: "var(--bg-card)", borderTop: "1px solid var(--border)", paddingBottom: "calc(0.75rem + var(--safe-bottom, 0px))" }}>
+        <div className="fixed left-0 right-0 px-4 pt-3 pb-3"
+          style={{
+            background: "var(--bg-card)", borderTop: "1px solid var(--border)",
+            bottom: "calc(var(--bottom-nav-height, 4rem) + var(--safe-bottom, 0px))",
+          }}>
           <div className="max-w-lg mx-auto">
             <button onClick={handleConfirm} disabled={saving || winTeams.length === 0}
               className="w-full h-14 bg-green-600 text-white font-bold text-base rounded-2xl disabled:opacity-50 transition-all active:scale-95">
