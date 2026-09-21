@@ -29,8 +29,8 @@ function DeleteGroupModal({ group, status, onConfirmDelete, onConfirmArchive, on
   const isCompleted = status === "completed";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)" }}>
-      <div className="w-full max-w-sm rounded-2xl p-6 space-y-4 bg-white text-slate-900">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)" }}>
+      <div className="w-full max-w-sm rounded-3xl p-6 space-y-4 bg-white text-slate-900 max-h-[85vh] overflow-y-auto">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isCompleted ? "bg-red-100" : "bg-amber-100"}`}>
@@ -479,61 +479,63 @@ export default function GroupDetailPage() {
       <div className="max-w-2xl mx-auto px-4 pb-24">
 
         {/* Hero Header */}
-        <div className="rounded-b-3xl px-6 pt-8 pb-8 mb-6 -mx-4"
+        <div className="rounded-b-3xl px-6 pt-8 pb-7 mb-6 -mx-4"
           style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f4c2a 100%)" }}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold tracking-widest text-green-400 uppercase">
-                {group.type === "last_man_standing" ? "⚽ Football" : "🏇 Horse Racing"}
-              </span>
-            </div>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold tracking-widest text-green-400 uppercase">
+              {group.type === "last_man_standing" ? "⚽ Football" : "🏇 Horse Racing"}
+            </span>
             <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
               <statusCfg.Icon className="w-3.5 h-3.5" />
               {statusCfg.label}
             </span>
           </div>
 
-          <h1 className="text-4xl font-black text-white mb-4 leading-tight">{group.name}</h1>
+          <h1 className="text-3xl font-black text-white mb-3 leading-tight">{group.name}</h1>
 
-          <div className="flex items-center gap-3 flex-wrap mb-5">
-            <span className="text-base text-white/60">
+          <div className="flex items-center gap-3 flex-wrap mb-6">
+            <span className="text-sm text-white/60">
               👥 {(group.member_emails || []).length} member{(group.member_emails || []).length !== 1 ? "s" : ""}
             </span>
             <span className="text-white/30">·</span>
-            <span className="text-base text-white/60">
+            <span className="text-sm text-white/60">
               Code: <span className="font-mono font-bold text-green-400">{group.invite_code}</span>
             </span>
           </div>
 
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-col gap-3">
+            {group.type === "horse_racing" && todayMeeting && (
+              <Link href={`/enter-tips?meetingId=${todayMeeting.id}&groupId=${group.id}`}
+                className="flex items-center justify-center gap-2 w-full h-14 rounded-2xl text-lg font-black text-white active:scale-95 transition-all"
+                style={{ background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)" }}>
+                🐴 Select Horses
+              </Link>
+            )}
+
             {isOwner && (
               <button onClick={handleShareInvite}
-                className="flex items-center gap-2 px-5 py-3 rounded-xl text-base font-bold text-white transition-all active:scale-95"
+                className="flex items-center justify-center gap-2 w-full h-14 rounded-2xl text-base font-bold text-white transition-all active:scale-95"
                 style={{ background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)" }}>
                 <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white flex-shrink-0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.116 1.529 5.845L.057 23.882l6.235-1.634A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.371l-.359-.214-3.701.97.988-3.61-.234-.37A9.818 9.818 0 0112 2.182c5.42 0 9.818 4.398 9.818 9.818 0 5.421-4.398 9.818-9.818 9.818z"/></svg>
                 Share Invite
               </button>
             )}
-
-            {group.type === "horse_racing" && todayMeeting && (
-              <Link href={`/enter-tips?meetingId=${todayMeeting.id}&groupId=${group.id}`}
-                className="flex items-center gap-2 px-5 py-3 rounded-xl text-base font-bold text-white active:scale-95 transition-all"
-                style={{ background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)" }}>
-                🐴 Select Horses
-              </Link>
-            )}
           </div>
 
-          {(isOwner || isAdmin) && (
-            <button onClick={() => setShowDeleteModal(true)} className="mt-4 flex items-center gap-1.5 text-sm font-medium text-white/30 hover:text-white/60 transition-colors">
-              <Trash2 className="w-4 h-4" />
-              {groupStatus === "completed" ? "Delete group" : "Archive or delete group"}
-            </button>
-          )}
-          {isMember && !isOwner && (
-            <button onClick={() => setShowLeaveConfirm(true)} className="mt-4 flex items-center gap-1.5 text-sm font-medium text-white/30 hover:text-white/60 transition-colors">
-              <X className="w-4 h-4" /> Leave group
-            </button>
+          {((isOwner || isAdmin) || (isMember && !isOwner)) && (
+            <div className="mt-5 pt-4 flex flex-col gap-2" style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+              {(isOwner || isAdmin) && (
+                <button onClick={() => setShowDeleteModal(true)} className="flex items-center gap-1.5 text-sm font-medium text-white/40 hover:text-white/70 transition-colors">
+                  <Trash2 className="w-4 h-4" />
+                  {groupStatus === "completed" ? "Delete group" : "Archive or delete group"}
+                </button>
+              )}
+              {isMember && !isOwner && (
+                <button onClick={() => setShowLeaveConfirm(true)} className="flex items-center gap-1.5 text-sm font-medium text-white/40 hover:text-white/70 transition-colors">
+                  <X className="w-4 h-4" /> Leave group
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -893,8 +895,8 @@ export default function GroupDetailPage() {
       </div>
 
       {showLeaveConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
-          <div className="rounded-2xl p-6 max-w-sm w-full shadow-xl" style={{ background: "var(--bg-card)" }}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
+          <div className="rounded-3xl p-6 max-w-sm w-full shadow-xl max-h-[85vh] overflow-y-auto" style={{ background: "var(--bg-card)" }}>
             <h3 className="font-bold text-lg mb-2" style={{ color: "var(--text-primary)" }}>Leave group?</h3>
             <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
               Are you sure you want to leave <strong>{group.name}</strong>? You&apos;ll need an invite code to rejoin.
