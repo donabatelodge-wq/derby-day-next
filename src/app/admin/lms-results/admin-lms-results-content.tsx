@@ -191,10 +191,10 @@ export default function AdminLmsResultsContent() {
 
       {!alreadyEntered && (
         <div className="fixed bottom-0 left-0 right-0 px-4 pt-3"
-          style={{ background: "var(--bg-card)", borderTop: "1px solid var(--border)", paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
+          style={{ background: "var(--bg-card)", borderTop: "1px solid var(--border)", paddingBottom: "calc(0.75rem + var(--safe-bottom, 0px))" }}>
           <div className="max-w-lg mx-auto">
             <button onClick={handleConfirm} disabled={saving || winTeams.length === 0}
-              className="w-full bg-green-600 text-white font-bold py-3 rounded-xl disabled:opacity-50 transition-opacity">
+              className="w-full h-14 bg-green-600 text-white font-bold text-base rounded-2xl disabled:opacity-50 transition-all active:scale-95">
               {saving ? "Saving…" : `Confirm Results & Advance to Week ${currentWeek + 1}`}
             </button>
             {winTeams.length === 0 && (
