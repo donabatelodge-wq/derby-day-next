@@ -901,10 +901,6 @@ export default function GroupDetailPage() {
           </div>
         )}
 
-        <div className="text-center px-5 py-4 text-xs rounded-2xl mt-6" style={{ color: "var(--text-muted)", background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-          For entertainment only · 18+ ·{" "}
-          <a href="https://www.begambleaware.org" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-70">begambleaware.org</a>
-        </div>
       </div>
 
       {showLeaveConfirm && (
