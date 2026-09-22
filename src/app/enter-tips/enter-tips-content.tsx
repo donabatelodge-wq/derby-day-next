@@ -170,6 +170,24 @@ export default function EnterTipsContent() {
     );
   }
 
+  if (races.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center px-4 pt-8 pb-24" style={{ background: "var(--bg)" }}>
+        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+          <Trophy className="w-8 h-8 text-slate-400" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Races Not Yet Available</h2>
+        <p className="mb-6 text-center" style={{ color: "var(--text-muted)" }}>
+          {meeting.name} is open, but races haven&apos;t been added yet. Check back closer to the meeting.
+        </p>
+        {groupId
+          ? <Link href={`/group/${groupId}`} className="text-sm underline" style={{ color: "var(--text-muted)" }}>Back to competition</Link>
+          : <Link href="/" className="text-sm underline" style={{ color: "var(--text-muted)" }}>Back to home</Link>
+        }
+      </div>
+    );
+  }
+
   if (meetingDate && firstRaceTime && isDeadlinePassed(meetingDate, firstRaceTime)) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4 text-center" style={{ background: "var(--bg)" }}>
