@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Trophy, Star, CheckCircle, Lock, Send } from "lucide-react";
+import { Trophy, Star, CheckCircle, Lock, Send, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import RaceEntryDeadlineClock, { isDeadlinePassed } from "@/components/racing/race-entry-deadline-clock";
@@ -32,6 +32,13 @@ export default function EnterTipsContent() {
   const [, setTick] = useState(0);
   const [meetingDate, setMeetingDate] = useState<string | null>(null);
   const [firstRaceTime, setFirstRaceTime] = useState<string | null>(null);
+  const [feeRequired, setFeeRequired] = useState(false);
+  const [feeAmount, setFeeAmount] = useState(0);
+  const [feeCurrency, setFeeCurrency] = useState("eur");
+  const [hasPaidFee, setHasPaidFee] = useState(true);
+
+  const formatAmount = (cents: number, currency: string) =>
+    new Intl.NumberFormat("en-IE", { style: "currency", currency: (currency || "eur").toUpperCase() }).format(cents / 100);
 
   useEffect(() => {
     const interval = setInterval(() => setTick(t => t + 1), 1000);
@@ -64,6 +71,22 @@ export default function EnterTipsContent() {
         setMeetingDate(meetingData.date);
         const sorted = (racesData ?? []).filter((r: any) => r.race_time).sort((a: any, b: any) => a.race_time.localeCompare(b.race_time));
         if (sorted.length > 0) setFirstRaceTime(sorted[0].race_time);
+      }
+
+      // Entry fee gate: if this group charges an entry fee, block picks until
+      // group_payments shows this user as paid. group_payments is admin-only
+      // writable (RLS), so this is a real gate, not just a UI nudge — once
+      // Stripe writes a "paid" row via a server-side webhook, this unlocks.
+      if (groupId) {
+        const { data: groupData } = await supabase.from("groups").select("entry_fee_enabled, entry_fee, currency").eq("id", groupId).single();
+        if (groupData?.entry_fee_enabled) {
+          setFeeRequired(true);
+          setFeeAmount(groupData.entry_fee ?? 0);
+          setFeeCurrency(groupData.currency ?? "eur");
+          const { data: paymentRows } = await supabase
+            .from("group_payments").select("status").eq("group_id", groupId).eq("user_email", user.email);
+          setHasPaidFee((paymentRows ?? []).some((p: any) => p.status === "paid"));
+        }
       }
 
       setLoading(false);
@@ -166,6 +189,24 @@ export default function EnterTipsContent() {
         <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>{msg.title}</h2>
         <p className="mb-6" style={{ color: "var(--text-muted)" }}>{msg.body}</p>
         <Link href="/" className="text-sm underline" style={{ color: "var(--text-muted)" }}>Back to home</Link>
+      </div>
+    );
+  }
+
+  if (feeRequired && !hasPaidFee) {
+    return (
+      <div className="min-h-screen flex flex-col items-center px-4 pt-8 pb-24 text-center" style={{ background: "var(--bg)" }}>
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+          <DollarSign className="w-8 h-8 text-green-600" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Entry Fee Required</h2>
+        <p className="mb-6" style={{ color: "var(--text-muted)" }}>
+          This group requires a {formatAmount(feeAmount, feeCurrency)} entry fee before you can pick horses.
+        </p>
+        {groupId
+          ? <Link href={`/group/${groupId}`} className="text-sm underline" style={{ color: "var(--text-muted)" }}>Back to competition</Link>
+          : <Link href="/" className="text-sm underline" style={{ color: "var(--text-muted)" }}>Back to home</Link>
+        }
       </div>
     );
   }
