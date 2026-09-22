@@ -44,10 +44,8 @@ export default function JoinContent() {
 
   useEffect(() => {
     if (joinCode.length >= 5) {
-      supabase.from("groups").select("id, name, type, member_emails, max_players")
-        .eq("invite_code", joinCode.toUpperCase())
-        .single()
-        .then(({ data }) => setPreviewGroup(data ?? null));
+      supabase.rpc("preview_group_by_invite_code", { p_invite_code: joinCode })
+        .then(({ data }) => setPreviewGroup(data?.[0] ?? null));
     } else {
       setPreviewGroup(null);
     }
@@ -58,33 +56,29 @@ export default function JoinContent() {
     setJoining(true);
     setJoinError("");
 
-    const { data: groups } = await supabase.from("groups").select("*").eq("invite_code", joinCode.trim().toUpperCase());
-    const group = groups?.[0];
+    // join_group() validates the PIN and capacity server-side and only ever
+    // touches member_emails/member_names — nothing about the group can be
+    // read or altered beyond that through this call.
+    const { data, error } = await supabase.rpc("join_group", {
+      p_invite_code: joinCode.trim(),
+      p_pin: joinPin.trim(),
+      p_display_name: joinName.trim(),
+    });
 
-    if (!group) { setJoinError("Invalid invite code."); setJoining(false); return; }
-    if (group.join_pin && group.join_pin !== joinPin.trim()) { setJoinError("Incorrect PIN."); setJoining(false); return; }
-
-    const already = (group.member_emails || []).includes(userEmail);
-    if (!already && group.max_players && (group.member_emails || []).length >= group.max_players) {
-      setJoinError("This group is full — the maximum number of players has been reached.");
+    if (error || !data?.group) {
+      setJoinError(error?.message || "Failed to join. Please try again.");
       setJoining(false);
       return;
     }
 
-    if (!already) {
-      const { error } = await supabase.from("groups").update({
-        member_emails: [...(group.member_emails || []), userEmail],
-        member_names: { ...(group.member_names || {}), [userEmail]: joinName.trim() },
-      }).eq("id", group.id);
-
-      if (error) { setJoinError("Failed to join. Please try again."); setJoining(false); return; }
-      toast.success(`Welcome to ${group.name}!`);
-    } else {
+    if (data.already_member) {
       toast.info("You're already a member of this group!");
+    } else {
+      toast.success(`Welcome to ${data.group.name}!`);
     }
 
     setJoining(false);
-    router.push(`/group/${group.id}`);
+    router.push(`/group/${data.group.id}`);
   };
 
   return (
@@ -109,7 +103,7 @@ export default function JoinContent() {
               <div>
                 <p className="font-bold text-green-900">{previewGroup.name}</p>
                 <p className="text-xs text-green-600">
-                  {(previewGroup.member_emails || []).length}/{previewGroup.max_players || 20} players joined
+                  {previewGroup.member_count}/{previewGroup.max_players || 20} players joined
                 </p>
               </div>
             </div>
