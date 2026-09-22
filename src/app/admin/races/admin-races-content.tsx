@@ -7,7 +7,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import {
   Plus, Trash2, Check, Trophy, ChevronDown, ChevronUp,
-  Pencil, AlertCircle, X, Zap, RefreshCw, Lock, Eye, EyeOff, ClipboardPaste
+  Pencil, AlertCircle, X, Zap, RefreshCw, Lock, ClipboardPaste
 } from "lucide-react";
 
 const EMPTY_FORM = {
@@ -19,11 +19,13 @@ const EMPTY_SHEETS_FORM = {
   race_number: "", race_name: "", race_time: "", distance: "", paste: "",
 };
 
-async function racingApiCall(endpoint: string, username: string, password: string) {
+// Credentials for the Racing API live server-side only (RACING_API_USERNAME/PASSWORD
+// env vars, read by /api/racing) — nothing is sent from the browser.
+async function racingApiCall(endpoint: string) {
   const res = await fetch("/api/racing", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ endpoint, username, password }),
+    body: JSON.stringify({ endpoint }),
   });
   if (!res.ok) {
     const err = await res.json();
@@ -74,9 +76,6 @@ export default function AdminRacesContent() {
   const [nonRunnerReplacement, setNonRunnerReplacement] = useState("");
   const [nonRunnerEntries, setNonRunnerEntries] = useState<any[]>([]);
   const [applyingNonRunner, setApplyingNonRunner] = useState(false);
-  const [apiUsername, setApiUsername] = useState("");
-  const [apiPassword, setApiPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [apiCourse, setApiCourse] = useState("");
   const [apiDate, setApiDate] = useState(new Date().toISOString().slice(0, 10));
   const [showApiImport, setShowApiImport] = useState(false);
@@ -86,8 +85,6 @@ export default function AdminRacesContent() {
   const [fetchingResults, setFetchingResults] = useState(false);
   const [fetchResultsMsg, setFetchResultsMsg] = useState("");
   const [showResultsForm, setShowResultsForm] = useState(false);
-  const [resultsUsername, setResultsUsername] = useState("");
-  const [resultsPassword, setResultsPassword] = useState("");
   const [joinDeadline, setJoinDeadline] = useState("");
   const [editingDeadline, setEditingDeadline] = useState(false);
   const [savingDeadline, setSavingDeadline] = useState(false);
@@ -125,9 +122,16 @@ export default function AdminRacesContent() {
     init();
   }, [meetingId]);
 
-  const recalcPoints = async (raceList: any[]) => {
-    const { data: entries } = await supabase.from("entries").select("*").eq("meeting_id", meetingId!);
-    if (!entries || !meeting) return;
+  // Returns { ok, failedCount } instead of silently swallowing failures, so
+  // callers (handleSaveResult etc.) can tell the admin exactly what didn't
+  // stick rather than showing a blanket "success" toast regardless.
+  const recalcPoints = async (raceList: any[]): Promise<{ ok: boolean; failedCount: number }> => {
+    const { data: entries, error: fetchError } = await supabase.from("entries").select("*").eq("meeting_id", meetingId!);
+    if (fetchError) {
+      toast.error(`Couldn't load entries to recalculate scores: ${fetchError.message}`);
+      return { ok: false, failedCount: 0 };
+    }
+    if (!entries || !meeting) return { ok: true, failedCount: 0 };
     const p1 = meeting.points_1st ?? 3;
     const p2 = meeting.points_2nd ?? 2;
     const p3 = meeting.points_3rd ?? 1;
@@ -136,6 +140,7 @@ export default function AdminRacesContent() {
     const bc3 = meeting.best_chance_multiplier_3rd ?? 2;
     const raceMap: Record<string, any> = {};
     raceList.forEach(r => { raceMap[r.id] = r; });
+    const failedEntries: string[] = [];
     for (const entry of entries) {
       let total = 0;
       const updatedSelections = (entry.selections || []).map((sel: any) => {
@@ -149,33 +154,74 @@ export default function AdminRacesContent() {
         total += pts;
         return { ...sel, finish_position };
       });
-      await supabase.from("entries").update({ selections: updatedSelections, total_points: total }).eq("id", entry.id);
+      const { error } = await supabase.from("entries").update({ selections: updatedSelections, total_points: total }).eq("id", entry.id);
+      if (error) failedEntries.push(entry.participant_name || entry.user_email || entry.id);
     }
+    if (failedEntries.length > 0) {
+      toast.error(`Scores failed to update for ${failedEntries.length} entr${failedEntries.length === 1 ? "y" : "ies"}: ${failedEntries.slice(0, 3).join(", ")}${failedEntries.length > 3 ? "…" : ""}`);
+    }
+    return { ok: failedEntries.length === 0, failedCount: failedEntries.length };
+  };
+
+  const maybeAutoCompleteMeeting = async (raceList: any[]): Promise<boolean> => {
+    // A meeting is only truly "done" once every one of its races has a result entered.
+    // Auto-flip its status here so completion never depends on an admin remembering
+    // to also update the separate Status dropdown on the Meetings page.
+    if (!meetingId || raceList.length === 0) return true;
+    const allResultsIn = raceList.every((r: any) => r.result_entered);
+    if (allResultsIn && meeting?.status !== "completed") {
+      const { error } = await supabase.from("meetings").update({ status: "completed" }).eq("id", meetingId);
+      if (error) { toast.error(`Couldn't mark meeting completed: ${error.message}`); return false; }
+    } else if (!allResultsIn && meeting?.status === "completed") {
+      // A result was cleared/edited after being marked complete — reopen it.
+      const { error } = await supabase.from("meetings").update({ status: "open" }).eq("id", meetingId);
+      if (error) { toast.error(`Couldn't reopen meeting: ${error.message}`); return false; }
+    }
+    return true;
   };
 
   const handleSaveResult = async (raceId: string) => {
     setSavingResult(s => ({ ...s, [raceId]: true }));
     const r = results[raceId];
-    await supabase.from("races").update({ ...r, result_entered: true }).eq("id", raceId);
-    const { data: raceList } = await supabase.from("races").select("*").eq("meeting_id", meetingId!);
-    await recalcPoints(raceList ?? []);
+    const { error: saveError } = await supabase.from("races").update({ ...r, result_entered: true }).eq("id", raceId);
+    if (saveError) {
+      toast.error(`Failed to save result: ${saveError.message}`);
+      setSavingResult(s => ({ ...s, [raceId]: false }));
+      return;
+    }
+    const { data: raceList, error: fetchError } = await supabase.from("races").select("*").eq("meeting_id", meetingId!);
+    if (fetchError) {
+      toast.error(`Result saved, but couldn't reload races to recalculate scores: ${fetchError.message}`);
+      setSavingResult(s => ({ ...s, [raceId]: false }));
+      return;
+    }
+    const { ok: recalcOk } = await recalcPoints(raceList ?? []);
+    const completeOk = await maybeAutoCompleteMeeting(raceList ?? []);
     await load();
-    toast.success("Result saved and scores updated!");
+    if (recalcOk && completeOk) {
+      toast.success("Result saved and scores updated!");
+    } else {
+      toast.error("Result was saved, but some scores may not have updated — check entries before relying on the leaderboard.");
+    }
     setSavingResult(s => ({ ...s, [raceId]: false }));
   };
 
   const handleSaveJoinDeadline = async () => {
     setSavingDeadline(true);
-    await supabase.from("meetings").update({ close_at: joinDeadline ? new Date(joinDeadline).toISOString() : null }).eq("id", meetingId!);
+    const { error } = await supabase.from("meetings").update({ close_at: joinDeadline ? new Date(joinDeadline).toISOString() : null }).eq("id", meetingId!);
     setEditingDeadline(false);
     setSavingDeadline(false);
+    if (error) {
+      toast.error(`Failed to save join deadline: ${error.message}`);
+      return;
+    }
     toast.success("Join deadline saved.");
     load();
   };
 
   const handleCreateRace = async () => {
     setSaving(true);
-    await supabase.from("races").insert({
+    const { error } = await supabase.from("races").insert({
       meeting_id: meetingId,
       race_number: Number(form.race_number),
       race_name: form.race_name,
@@ -185,8 +231,15 @@ export default function AdminRacesContent() {
       horses: form.horses.filter(h => h.name.trim()),
       result_entered: false,
     });
+    if (error) {
+      toast.error(`Failed to create race: ${error.message}`);
+      setSaving(false);
+      return;
+    }
     setForm(EMPTY_FORM);
     setShowForm(false);
+    const { data: raceList } = await supabase.from("races").select("*").eq("meeting_id", meetingId!);
+    await maybeAutoCompleteMeeting(raceList ?? []);
     await load();
     setSaving(false);
     toast.success("Race created!");
@@ -198,7 +251,7 @@ export default function AdminRacesContent() {
     const horses = parseSheetsRows(sheetsForm.paste);
     if (horses.length === 0) { setSheetsError("No runners found in the pasted text. Expected columns: Number, Name, Jockey, Trainer."); return; }
     setSheetsSaving(true);
-    await supabase.from("races").insert({
+    const { error } = await supabase.from("races").insert({
       meeting_id: meetingId,
       race_number: Number(sheetsForm.race_number),
       race_name: sheetsForm.race_name,
@@ -208,8 +261,15 @@ export default function AdminRacesContent() {
       horses,
       result_entered: false,
     });
+    if (error) {
+      setSheetsError(`Failed to create race: ${error.message}`);
+      setSheetsSaving(false);
+      return;
+    }
     setSheetsForm(EMPTY_SHEETS_FORM);
     setShowSheetsImport(false);
+    const { data: raceList } = await supabase.from("races").select("*").eq("meeting_id", meetingId!);
+    await maybeAutoCompleteMeeting(raceList ?? []);
     await load();
     setSheetsSaving(false);
     toast.success(`Race created with ${horses.length} runners!`);
@@ -217,13 +277,18 @@ export default function AdminRacesContent() {
 
   const handleSaveEdit = async (raceId: string) => {
     setSavingEdit(true);
-    await supabase.from("races").update({
+    const { error } = await supabase.from("races").update({
       race_number: Number(editForm.race_number),
       race_name: editForm.race_name,
       race_type: editForm.race_type,
       distance: editForm.distance,
       horses: editForm.horses.filter((h: any) => h.name?.trim()),
     }).eq("id", raceId);
+    if (error) {
+      toast.error(`Failed to save changes: ${error.message}`);
+      setSavingEdit(false);
+      return;
+    }
     setEditingRace(null);
     await load();
     setSavingEdit(false);
@@ -231,16 +296,34 @@ export default function AdminRacesContent() {
   };
 
   const handleDeleteRace = async (raceId: string) => {
-    if (!confirm("Delete this race?")) return;
+    if (!confirm("Delete this race? This also removes it from every player's picks.")) return;
     setDeletingRace(raceId);
-    const { data: entries } = await supabase.from("entries").select("*").eq("meeting_id", meetingId!);
+    const { data: entries, error: entriesError } = await supabase.from("entries").select("*").eq("meeting_id", meetingId!);
+    if (entriesError) {
+      toast.error(`Failed to delete race: couldn't load entries (${entriesError.message})`);
+      setDeletingRace(null);
+      return;
+    }
+    const failedUnlinks: string[] = [];
     for (const entry of entries ?? []) {
       const selections = (entry.selections || []).filter((s: any) => s.race_id !== raceId);
-      await supabase.from("entries").update({ selections }).eq("id", entry.id);
+      const { error } = await supabase.from("entries").update({ selections }).eq("id", entry.id);
+      if (error) failedUnlinks.push(entry.participant_name || entry.user_email || entry.id);
     }
-    await supabase.from("races").delete().eq("id", raceId);
+    if (failedUnlinks.length > 0) {
+      toast.error(`Couldn't remove this race from ${failedUnlinks.length} entr${failedUnlinks.length === 1 ? "y" : "ies"} — aborting delete so picks stay consistent.`);
+      setDeletingRace(null);
+      return;
+    }
+    const { error: deleteError } = await supabase.from("races").delete().eq("id", raceId);
+    if (deleteError) {
+      toast.error(`Failed to delete race: ${deleteError.message}`);
+      setDeletingRace(null);
+      return;
+    }
     const { data: raceList } = await supabase.from("races").select("*").eq("meeting_id", meetingId!);
     await recalcPoints(raceList ?? []);
+    await maybeAutoCompleteMeeting(raceList ?? []);
     await load();
     setDeletingRace(null);
     toast.success("Race deleted.");
@@ -257,28 +340,35 @@ export default function AdminRacesContent() {
   const handleApplyNonRunner = async () => {
     setApplyingNonRunner(true);
     const { raceId, horseName } = nonRunnerPanel;
+    const failed: string[] = [];
     for (const entry of nonRunnerEntries) {
       const selections = (entry.selections || []).map((s: any) =>
         s.race_id === raceId && s.horse_name === horseName ? { ...s, horse_name: nonRunnerReplacement } : s
       );
-      await supabase.from("entries").update({ selections }).eq("id", entry.id);
+      const { error } = await supabase.from("entries").update({ selections }).eq("id", entry.id);
+      if (error) failed.push(entry.participant_name || entry.user_email || entry.id);
     }
     const { data: raceList } = await supabase.from("races").select("*").eq("meeting_id", meetingId!);
-    await recalcPoints(raceList ?? []);
+    const { ok: recalcOk } = await recalcPoints(raceList ?? []);
     setNonRunnerPanel(null);
     await load();
     setApplyingNonRunner(false);
-    toast.success("Non-runner replacement applied!");
+    if (failed.length > 0) {
+      toast.error(`Replacement failed for ${failed.length} entr${failed.length === 1 ? "y" : "ies"}: ${failed.slice(0, 3).join(", ")}${failed.length > 3 ? "…" : ""}`);
+    } else if (!recalcOk) {
+      toast.error("Replacement applied, but scores may not have fully recalculated — check entries.");
+    } else {
+      toast.success("Non-runner replacement applied!");
+    }
   };
 
   const handleApiImport = async () => {
     if (!apiCourse.trim()) { setApiImportError("Please enter a course name."); return; }
-    if (!apiUsername.trim() || !apiPassword.trim()) { setApiImportError("Please enter your Racing API credentials."); return; }
     setApiImporting(true);
     setApiImportError("");
     setApiImportResult(null);
     try {
-      const data = await racingApiCall(`racecards/standard?date=${apiDate}`, apiUsername, apiPassword);
+      const data = await racingApiCall(`racecards/standard?date=${apiDate}`);
       const allRaces = data.racecards || [];
       const courseRaces = allRaces.filter((r: any) => r.course.toLowerCase().startsWith(apiCourse.toLowerCase().trim()));
       if (courseRaces.length === 0) {
@@ -286,23 +376,63 @@ export default function AdminRacesContent() {
         setApiImportError(`No races found for "${apiCourse}". Available today: ${available || "none"}`);
         setApiImporting(false); return;
       }
-      await supabase.from("races").delete().eq("meeting_id", meetingId!);
+
+      // Safety check: this import DELETES every existing race for the meeting
+      // before re-inserting. If results are already entered or players have
+      // already submitted picks, wiping the races would silently orphan those
+      // references (entries would stop scoring for that leg with no error).
+      // Confirm explicitly, and say plainly what's at stake.
+      if (races.length > 0) {
+        const hasResults = races.some((r: any) => r.result_entered);
+        const { data: existingEntries, error: entriesCheckError } = await supabase
+          .from("entries").select("id").eq("meeting_id", meetingId!).limit(1);
+        if (entriesCheckError) {
+          setApiImportError(`Couldn't check for existing entries before import: ${entriesCheckError.message}`);
+          setApiImporting(false); return;
+        }
+        const hasEntries = (existingEntries?.length ?? 0) > 0;
+        const stakes = hasResults && hasEntries
+          ? "This meeting already has results entered AND player entries."
+          : hasResults
+          ? "This meeting already has results entered."
+          : hasEntries
+          ? "Players have already submitted entries for this meeting."
+          : null;
+        const warning = stakes
+          ? `${stakes} Importing will DELETE all ${races.length} existing race(s) and replace them with ${courseRaces.length} new one(s) — any picks or results tied to the old races will be lost or stop scoring. This cannot be undone. Continue?`
+          : `This will delete the ${races.length} existing race(s) for this meeting and replace them with ${courseRaces.length} imported race(s). Continue?`;
+        if (!confirm(warning)) { setApiImporting(false); return; }
+      }
+
+      const { error: deleteError } = await supabase.from("races").delete().eq("meeting_id", meetingId!);
+      if (deleteError) {
+        setApiImportError(`Failed to clear existing races: ${deleteError.message}`);
+        setApiImporting(false); return;
+      }
+      const failedRaceNumbers: number[] = [];
       for (let i = 0; i < courseRaces.length; i++) {
         const r = courseRaces[i];
         const horses = (r.runners || []).map((runner: any) => ({
           number: Number(runner.number) || (i + 1),
           name: runner.horse, jockey: runner.jockey || "", trainer: runner.trainer || "",
         }));
-        await supabase.from("races").insert({
+        const { error } = await supabase.from("races").insert({
           meeting_id: meetingId, race_number: i + 1,
           race_name: r.race_name || `Race ${i + 1}`,
           race_time: r.off_time || "", distance: r.distance_f ? `${r.distance_f}f` : "",
           horses, result_entered: false,
         });
+        if (error) failedRaceNumbers.push(i + 1);
+      }
+      if (failedRaceNumbers.length > 0) {
+        setApiImportError(`Existing races were cleared, but race #${failedRaceNumbers.join(", ")} failed to import. Reload this page and check before relying on this meeting.`);
+        setApiImporting(false); return;
       }
       setApiImportResult({ racesImported: courseRaces.length, course: apiCourse });
       toast.success(`Imported ${courseRaces.length} races from ${apiCourse}!`);
       setShowApiImport(false);
+      const { data: raceList } = await supabase.from("races").select("*").eq("meeting_id", meetingId!);
+      await maybeAutoCompleteMeeting(raceList ?? []);
       await load();
     } catch (e: any) {
       setApiImportError(e.message || "Import failed.");
@@ -311,34 +441,38 @@ export default function AdminRacesContent() {
   };
 
   const handleFetchResults = async () => {
-    if (!resultsUsername.trim() || !resultsPassword.trim()) {
-      setFetchResultsMsg("Please enter your Racing API credentials.");
-      return;
-    }
     setFetchingResults(true);
     setFetchResultsMsg("");
     try {
       const { data: raceList } = await supabase.from("races").select("*").eq("meeting_id", meetingId!);
       const course = encodeURIComponent(meeting?.venue || meeting?.name || "");
-      const data = await racingApiCall(`results?date=${meeting?.date}&course=${course}`, resultsUsername, resultsPassword);
+      const data = await racingApiCall(`results?date=${meeting?.date}&course=${course}`);
       let resultsApplied = 0;
+      const failedRaces: number[] = [];
       for (const race of raceList ?? []) {
         if (!race.race_time) continue;
         const matchedRace = (data.results || []).find((r: any) => r.off_time === race.race_time);
         if (!matchedRace) continue;
         const runners = matchedRace.runners || [];
         const getPos = (pos: number) => runners.find((r: any) => r.position === String(pos))?.horse || "";
-        await supabase.from("races").update({
+        const { error } = await supabase.from("races").update({
           result_1st: getPos(1), result_2nd: getPos(2), result_3rd: getPos(3), result_entered: true,
         }).eq("id", race.id);
+        if (error) { failedRaces.push(race.race_number); continue; }
         resultsApplied++;
       }
       const { data: updatedRaces } = await supabase.from("races").select("*").eq("meeting_id", meetingId!);
-      await recalcPoints(updatedRaces ?? []);
+      const { ok: recalcOk } = await recalcPoints(updatedRaces ?? []);
+      const completeOk = await maybeAutoCompleteMeeting(updatedRaces ?? []);
       await load();
-      setFetchResultsMsg(`✅ ${resultsApplied} of ${raceList?.length} races scored.`);
+      const failedNote = failedRaces.length > 0 ? ` (race ${failedRaces.join(", ")} failed to save)` : "";
+      setFetchResultsMsg(`${failedRaces.length === 0 && recalcOk && completeOk ? "✅" : "⚠️"} ${resultsApplied} of ${raceList?.length} races scored${failedNote}.`);
       setShowResultsForm(false);
-      toast.success(`Results applied! ${resultsApplied} races scored.`);
+      if (failedRaces.length === 0 && recalcOk && completeOk) {
+        toast.success(`Results applied! ${resultsApplied} races scored.`);
+      } else {
+        toast.error("Results were applied, but something didn't fully save — check the message below before trusting the leaderboard.");
+      }
     } catch (e: any) {
       setFetchResultsMsg("Error: " + (e.message || "Unknown error"));
     }
@@ -417,24 +551,9 @@ export default function AdminRacesContent() {
                     className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
                 </div>
               </div>
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Racing API Username</label>
-                <input placeholder="Your username" value={apiUsername} onChange={e => setApiUsername(e.target.value)}
-                  className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
-              </div>
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Racing API Password</label>
-                <div className="relative">
-                  <input type={showPassword ? "text" : "password"} placeholder="Your password" value={apiPassword} onChange={e => setApiPassword(e.target.value)}
-                    className="w-full h-11 rounded-xl border border-slate-200 px-3 pr-10 text-sm" />
-                  <button onClick={() => setShowPassword(s => !s)} className="absolute right-3 top-2 text-slate-400">
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
               {apiImportError && <p className="text-xs text-red-500 rounded-lg bg-red-50 px-3 py-2">{apiImportError}</p>}
               {apiImportResult && <p className="text-xs text-emerald-600 rounded-lg bg-emerald-50 px-3 py-2">✅ {apiImportResult.racesImported} races imported from {apiImportResult.course}</p>}
-              <button onClick={handleApiImport} disabled={!apiCourse.trim() || !apiUsername.trim() || !apiPassword.trim() || apiImporting}
+              <button onClick={handleApiImport} disabled={!apiCourse.trim() || apiImporting}
                 className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
                 <Zap className="w-4 h-4" />
                 {apiImporting ? "Importing..." : "Import Runners"}
@@ -522,18 +641,8 @@ export default function AdminRacesContent() {
             </p>
           )}
           {showResultsForm && (
-            <div className="space-y-3 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Racing API Username</label>
-                <input placeholder="Your username" value={resultsUsername} onChange={e => setResultsUsername(e.target.value)}
-                  className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
-              </div>
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Racing API Password</label>
-                <input type="password" placeholder="Your password" value={resultsPassword} onChange={e => setResultsPassword(e.target.value)}
-                  className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
-              </div>
-              <button onClick={handleFetchResults} disabled={!resultsUsername.trim() || !resultsPassword.trim() || fetchingResults}
+            <div className="pt-3 border-t" style={{ borderColor: "var(--border)" }}>
+              <button onClick={handleFetchResults} disabled={fetchingResults}
                 className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
                 <RefreshCw className={`w-4 h-4 ${fetchingResults ? "animate-spin" : ""}`} />
                 {fetchingResults ? "Fetching..." : "Fetch Results & Auto-Score"}
