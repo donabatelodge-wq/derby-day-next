@@ -30,7 +30,10 @@ export default function InviteContent() {
       }
       if (!code) { setNotFound(true); setLoading(false); return; }
 
-      const { data: groups } = await supabase.from("groups").select("*").eq("invite_code", code.toUpperCase());
+      // Safe preview only — no join_pin, owner_email, entry_fee, or member email
+      // list. This page is reachable by anyone who knows the invite code, before
+      // any membership check, so it must never return sensitive fields.
+      const { data: groups } = await supabase.rpc("preview_group_by_invite_code", { p_invite_code: code });
       if (!groups || groups.length === 0) { setNotFound(true); setLoading(false); return; }
 
       const g = groups[0];
@@ -73,7 +76,7 @@ export default function InviteContent() {
   );
 
   const isLms = group.type === "last_man_standing";
-  const playerCount = (group.member_emails || []).length;
+  const playerCount = group.member_count ?? 0;
   const firstMeetingDate = meetings.length > 0
     ? (() => { try { return format(new Date(meetings[0].date), "EEE d MMM"); } catch { return "TBC"; } })()
     : "TBC";
