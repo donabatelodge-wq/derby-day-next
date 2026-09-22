@@ -87,9 +87,12 @@ export function getGroupStatus(
 
   if (groupMeetings.length === 0) return "upcoming";
 
-  const allMeetingsDone = groupMeetings.every(
-    (m) => m.status === "completed" || m.status === "closed"
-  );
+  // "closed" only means entries have stopped being accepted — it does NOT mean
+  // results are in. Only "completed" (now set automatically once every race in
+  // a meeting has a result — see admin-races-content.tsx) means the meeting is
+  // actually finished. Treating "closed" as done here was what caused a winner
+  // to be declared before every meeting's results had been entered.
+  const allMeetingsDone = groupMeetings.every((m) => m.status === "completed");
 
   // Use the LATEST meeting date as the effective deadline for "is this really over",
   // rather than group.start_deadline (which only reflects the first meeting/day).
