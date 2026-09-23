@@ -3,9 +3,9 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Menu, X, Home, Users, Settings, Trophy, LogOut, ChevronLeft } from "lucide-react";
+import { Menu, X, Home, Users, Settings, Trophy, SlidersHorizontal, LogOut, ChevronLeft } from "lucide-react";
 
-const ROOT_PATHS = new Set(["/", "/my-competitions", "/admin/meetings", "/admin/groups", "/admin/leagues"]);
+const ROOT_PATHS = new Set(["/", "/my-competitions", "/admin/meetings", "/admin/groups", "/admin/leagues", "/admin/settings"]);
 
 export function AppHeader() {
   const pathname = usePathname();
@@ -49,6 +49,7 @@ export function AppHeader() {
     ...(isAdmin ? [
       { label: "Admin Meetings", href: "/admin/meetings", icon: Settings },
       { label: "Leagues & Teams", href: "/admin/leagues", icon: Trophy },
+      { label: "App Settings", href: "/admin/settings", icon: SlidersHorizontal },
     ] : []),
   ];
 
