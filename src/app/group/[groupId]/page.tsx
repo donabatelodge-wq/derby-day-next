@@ -364,8 +364,21 @@ export default function GroupDetailPage() {
         body: JSON.stringify({ groupId: group.id, kind: "upgrade" }),
       });
       const data = await res.json();
-      if (!res.ok || !data.url) {
+      if (!res.ok) {
         toast.error(data.error || "Couldn't start checkout. Please try again.");
+        setUpgrading(false);
+        return;
+      }
+      if (data.bypassed) {
+        // Admin has switched payments off in /admin/settings — the player
+        // limit was already raised server-side, no Stripe redirect needed.
+        toast.success("Payments are in test mode — player limit raised without charging.");
+        setGroup({ ...group, max_players: data.targetTier });
+        setUpgrading(false);
+        return;
+      }
+      if (!data.url) {
+        toast.error("Couldn't start checkout. Please try again.");
         setUpgrading(false);
         return;
       }
