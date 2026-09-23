@@ -157,7 +157,8 @@ function NewGroupPageInner() {
     }).select().single();
 
     if (error) {
-      toast.error("Failed to create group. Please try again.");
+      console.error("Group insert failed:", error);
+      toast.error(`Failed to create group: ${error.message}`);
       setSaving(false);
       return;
     }
