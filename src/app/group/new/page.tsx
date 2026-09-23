@@ -210,7 +210,7 @@ function NewGroupPageInner() {
               className="w-full flex items-center gap-4 p-5 rounded-2xl bg-white border-2 border-transparent hover:border-green-300 text-left transition-all active:scale-95 shadow-sm">
               <div className="w-14 h-14 rounded-2xl bg-green-100 flex items-center justify-center text-3xl flex-shrink-0">🏇</div>
               <div className="flex-1">
-                <p className="font-bold text-slate-900 text-base">Horse Racing Tipping</p>
+                <p className="font-bold text-slate-900 text-base">Horse Racing</p>
                 <p className="text-xs text-slate-500 mt-0.5">Pick winners across race meetings and earn points</p>
               </div>
               <ChevronRight className="w-5 h-5 text-slate-300" />
