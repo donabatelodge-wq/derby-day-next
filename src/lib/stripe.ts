@@ -3,11 +3,11 @@ import Stripe from "stripe";
 // Server-only. Never import this from a "use client" file — the secret key
 // must never reach the browser.
 //
-// Lazily initialized: Next.js evaluates route modules at build time to
-// collect page data, so a top-level throw here would fail the build even
-// when no request ever reaches this route. Deferring the check to first use
-// lets the app build and deploy fine with STRIPE_SECRET_KEY unset — it only
-// errors if something actually tries to call Stripe.
+// Lazy on purpose: Next.js evaluates route modules at build time to collect
+// page data, so a top-level throw here (when STRIPE_SECRET_KEY isn't set
+// yet) would crash the whole build, not just a runtime request. Wrapping
+// the check inside a function means it only runs when a route actually
+// calls getStripe().
 let _stripe: Stripe | null = null;
 
 export function getStripe(): Stripe {
