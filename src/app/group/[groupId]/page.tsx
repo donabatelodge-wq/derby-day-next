@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { Group, Meeting, Entry } from "@/lib/types";
+import { nextPackTier } from "@/lib/pricing";
 
 const STATUS_CONFIG = {
   upcoming:    { label: "Upcoming",    Icon: Clock,        color: "text-blue-600",  bg: "bg-blue-50",  border: "border-blue-200"  },
@@ -191,6 +192,7 @@ export default function GroupDetailPage() {
   const [finalised, setFinalised] = useState(false);
   const [hasPaid, setHasPaid] = useState(true);
   const [now, setNow] = useState(new Date());
+  const [upgrading, setUpgrading] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000);
@@ -350,6 +352,27 @@ export default function GroupDetailPage() {
   const handleConfirmArchive = async () => {
     await supabase.from("groups").update({ status: "archived" }).eq("id", group.id);
     router.push("/");
+  };
+
+  const handleUpgradePlayers = async () => {
+    setUpgrading(true);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupId: group.id, kind: "upgrade" }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        toast.error(data.error || "Couldn't start checkout. Please try again.");
+        setUpgrading(false);
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      toast.error("Couldn't start checkout. Please try again.");
+      setUpgrading(false);
+    }
   };
 
   const createLmsCompetition = async () => {
@@ -563,6 +586,32 @@ export default function GroupDetailPage() {
             </div>
           </div>
         )}
+
+        {isOwner && (group.member_emails || []).length >= (group.max_players || 20) && (() => {
+          const next = nextPackTier(group.max_players || 20);
+          return (
+            <div className="mb-6 rounded-3xl p-6 border-2 border-amber-300 bg-amber-50">
+              <div className="flex items-center gap-3 mb-3">
+                <Users className="w-9 h-9 text-amber-600 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-semibold text-base text-amber-800">Your group is full</p>
+                  <p className="text-sm text-amber-700">
+                    {next
+                      ? `You've hit your ${group.max_players}-player limit. Upgrade to ${next.players} players to let more people join.`
+                      : `You've hit your ${group.max_players}-player limit — that's the highest tier available.`}
+                  </p>
+                </div>
+              </div>
+              {next && (
+                <button onClick={handleUpgradePlayers} disabled={upgrading}
+                  className="w-full h-12 rounded-2xl text-white text-sm font-bold disabled:opacity-50 transition-all active:scale-95"
+                  style={{ background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" }}>
+                  {upgrading ? "Redirecting to payment..." : `Buy more players — upgrade to ${next.players}`}
+                </button>
+              )}
+            </div>
+          );
+        })()}
 
         {group.type === "horse_racing" && isMember && firstRaceDeadline && now > firstRaceDeadline && (() => {
           const dailyEntry = (group.daily_meeting_ids || []).find((d: any) => d.date === todayStr);
