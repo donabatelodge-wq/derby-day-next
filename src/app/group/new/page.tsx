@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ChevronRight, ChevronLeft, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { PLAYER_PACKS, packForPlayers } from "@/lib/pricing";
+import type { League } from "@/lib/types";
 
 function generateInviteCode() {
   const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -56,6 +57,9 @@ function NewGroupPageInner() {
   const [meetings, setMeetings] = useState<any[]>([]);
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [selectedMeetingIds, setSelectedMeetingIds] = useState<string[]>([]);
+  const [leagues, setLeagues] = useState<League[]>([]);
+  const [loadingLeagues, setLoadingLeagues] = useState(false);
+  const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(null);
   const [groupName, setGroupName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [pin, setPin] = useState("");
@@ -63,7 +67,6 @@ function NewGroupPageInner() {
   const [maxPlayers, setMaxPlayers] = useState(20);
   const [currency, setCurrency] = useState("eur");
   const [saving, setSaving] = useState(false);
-  const [selectedLeague, setSelectedLeague] = useState("");
 
   useEffect(() => {
     const init = async () => {
@@ -86,11 +89,24 @@ function NewGroupPageInner() {
     }
   }, [groupType]);
 
+  // Leagues are admin-managed (Admin → Leagues) rather than hardcoded, so the
+  // list of countries/leagues on offer — and their team rosters — can change
+  // without a code deploy.
+  useEffect(() => {
+    if (groupType === "last_man_standing" && leagues.length === 0) {
+      setLoadingLeagues(true);
+      supabase.from("leagues").select("*")
+        .eq("active", true)
+        .order("sort_order").order("name")
+        .then(({ data }) => { setLeagues(data ?? []); setLoadingLeagues(false); });
+    }
+  }, [groupType]);
+
   const canGoNext = () => {
     if (step === 1) return !!groupType;
     if (step === 2) {
       if (groupType === "horse_racing") return selectedMeetingIds.length > 0;
-      if (groupType === "last_man_standing") return !!selectedLeague;
+      if (groupType === "last_man_standing") return !!selectedLeagueId;
     }
     if (step === 3) return groupName.trim().length > 0 && displayName.trim().length > 0 && pin.length === 4;
     if (step === 4) return !!maxPlayers;
@@ -127,6 +143,7 @@ function NewGroupPageInner() {
       invite_code: generateInviteCode(),
       join_pin: pin.trim(),
       type: groupType,
+      lms_league_id: groupType === "last_man_standing" ? selectedLeagueId : null,
       entry_fee_enabled: false,
       entry_fee: 0,
       currency,
@@ -164,6 +181,7 @@ function NewGroupPageInner() {
   const packOptions = PLAYER_PACKS;
   const pack = packForPlayers(maxPlayers);
   const currSymbol = CURRENCIES.find(c => c.code === currency)?.symbol || "€";
+  const selectedLeague = leagues.find(l => l.id === selectedLeagueId) || null;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#f8fafc" }}>
@@ -210,8 +228,8 @@ function NewGroupPageInner() {
               className="w-full flex items-center gap-4 p-5 rounded-2xl bg-white border-2 border-transparent hover:border-green-300 text-left transition-all active:scale-95 shadow-sm">
               <div className="w-14 h-14 rounded-2xl bg-green-100 flex items-center justify-center text-3xl flex-shrink-0">🏇</div>
               <div className="flex-1">
-                <p className="font-bold text-slate-900 text-base">Horse Racing</p>
-                <p className="text-xs text-slate-500 mt-0.5">Pick winners across race meetings and get points</p>
+                <p className="font-bold text-slate-900 text-base">Horse Racing Tipping</p>
+                <p className="text-xs text-slate-500 mt-0.5">Pick winners across race meetings and earn points</p>
               </div>
               <ChevronRight className="w-5 h-5 text-slate-300" />
             </button>
@@ -219,7 +237,7 @@ function NewGroupPageInner() {
               className="w-full flex items-center gap-4 p-5 rounded-2xl bg-white border-2 border-transparent hover:border-purple-300 text-left transition-all active:scale-95 shadow-sm">
               <div className="w-14 h-14 rounded-2xl bg-purple-100 flex items-center justify-center text-3xl flex-shrink-0">⚽</div>
               <div className="flex-1">
-                <p className="font-bold text-slate-900 text-base">Last Man Standing L or D You Are Out</p>
+                <p className="font-bold text-slate-900 text-base">Last Man Standing</p>
                 <p className="text-xs text-slate-500 mt-0.5">Pick one team per week — don&apos;t get eliminated!</p>
               </div>
               <ChevronRight className="w-5 h-5 text-slate-300" />
@@ -277,17 +295,30 @@ function NewGroupPageInner() {
           <div>
             <p className="text-slate-500 text-sm mb-4">Select the league your competition will be based on.</p>
             <div className="space-y-3">
-              {["Premier League 🏴󠁧󠁢󠁥󠁮󠁧󠁿", "La Liga 🇪🇸", "Bundesliga 🇩🇪", "Serie A 🇮🇹", "Ligue 1 🇫🇷", "Eredivisie 🇳🇱", "AFL 🇦🇺", "NRL 🇦🇺", "NFL 🇺🇸"].map(league => (
-                <button key={league} onClick={() => setSelectedLeague(league)}
-                  className="w-full flex items-center justify-between px-6 py-5 rounded-2xl border-2 text-left transition-all active:scale-95 shadow-sm"
-                  style={{
-                    borderColor: selectedLeague === league ? "#a855f7" : "transparent",
-                    background: selectedLeague === league ? "#faf5ff" : "#ffffff"
-                  }}>
-                  <span className="font-bold text-slate-900 text-lg">{league}</span>
-                  {selectedLeague === league && <Check className="w-6 h-6 text-purple-500" />}
-                </button>
-              ))}
+              {loadingLeagues ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : leagues.length === 0 ? (
+                <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
+                  <p className="text-slate-500 text-sm">No leagues available yet.</p>
+                  <p className="text-slate-400 text-xs mt-1">Ask an admin to add one first.</p>
+                </div>
+              ) : (
+                leagues.map(league => (
+                  <button key={league.id} onClick={() => setSelectedLeagueId(league.id)}
+                    className="w-full flex items-center justify-between px-6 py-5 rounded-2xl border-2 text-left transition-all active:scale-95 shadow-sm"
+                    style={{
+                      borderColor: selectedLeagueId === league.id ? "#a855f7" : "transparent",
+                      background: selectedLeagueId === league.id ? "#faf5ff" : "#ffffff"
+                    }}>
+                    <span className="font-bold text-slate-900 text-lg">
+                      {league.name}{league.country ? ` (${league.country})` : ""}
+                    </span>
+                    {selectedLeagueId === league.id && <Check className="w-6 h-6 text-purple-500" />}
+                  </button>
+                ))
+              )}
             </div>
             <InlineContinueButton disabled={!canGoNext()} onClick={() => setStep(s => s + 1)} />
           </div>
@@ -361,7 +392,7 @@ function NewGroupPageInner() {
               <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Summary</p>
               <SummaryRow label="Group name" value={groupName} />
               <SummaryRow label="Type" value={groupType === "horse_racing" ? "🏇 Horse Racing" : "⚽ Last Man Standing"} />
-              {groupType === "last_man_standing" && <SummaryRow label="League" value={selectedLeague} />}
+              {groupType === "last_man_standing" && <SummaryRow label="League" value={selectedLeague?.name || "—"} />}
               {groupType === "horse_racing" && <SummaryRow label="Meetings" value={`${selectedMeetingIds.length} selected`} />}
               <SummaryRow label="Your role" value={ownerPlaying ? "Owner + Player" : "Owner only"} />
               <SummaryRow label="Max players" value={`${maxPlayers} players`} />
