@@ -10,6 +10,14 @@ import { packForPlayers, nextPackTier } from "@/lib/pricing";
 //    on the group at creation time).
 //  - kind 'upgrade': moving an already-active group up to the next pack tier
 //    when it hits its player cap. Charges the incremental price only.
+//
+// If the app_settings row with key 'payments_enabled' has value 'false' (an
+// admin-only test-mode switch, toggled from /admin/settings), this route
+// skips Stripe entirely and applies the same state change directly via the
+// service role client — same ownership/status checks and pricing logic
+// either way, just no real charge. The response shape tells the caller
+// which happened: { url } to redirect to Stripe, or { bypassed: true } when
+// the change was applied immediately.
 export async function POST(request: NextRequest) {
   try {
     const { groupId, kind } = await request.json();
@@ -63,6 +71,28 @@ export async function POST(request: NextRequest) {
       productName = `Derby Day — upgrade to ${next.players} players`;
     }
 
+    const service = createServiceClient();
+
+    const { data: settingRow } = await service
+      .from("app_settings").select("value").eq("key", "payments_enabled").maybeSingle();
+    // Missing row, or any value other than the literal string 'false', means
+    // payments stay on — the toggle only ever turns things off explicitly.
+    const paymentsEnabled = settingRow?.value !== "false";
+
+    if (!paymentsEnabled) {
+      // Test mode: apply the exact same state change Stripe's webhook would
+      // have applied, immediately, with no charge. No group_purchases row —
+      // there's no real payment to record.
+      if (kind === "initial") {
+        const { error } = await service.from("groups").update({ status: "active" }).eq("id", groupId).eq("status", "pending_payment");
+        if (error) return NextResponse.json({ error: `Failed to activate group: ${error.message}` }, { status: 500 });
+      } else {
+        const { error } = await service.from("groups").update({ max_players: targetTier }).eq("id", groupId);
+        if (error) return NextResponse.json({ error: `Failed to raise player limit: ${error.message}` }, { status: 500 });
+      }
+      return NextResponse.json({ bypassed: true, groupId, targetTier });
+    }
+
     const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "";
 
     const session = await getStripe().checkout.sessions.create({
@@ -83,7 +113,6 @@ export async function POST(request: NextRequest) {
     // group_purchases has no client-writable RLS policy by design — only
     // server code that has already verified ownership (as this route just
     // did) may record a purchase, via the service role client.
-    const service = createServiceClient();
     const { error: purchaseError } = await service.from("group_purchases").insert({
       group_id: group.id,
       stripe_checkout_session_id: session.id,
