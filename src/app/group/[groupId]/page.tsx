@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import type { Group, Meeting, Entry } from "@/lib/types";
 import { nextPackTier } from "@/lib/pricing";
+import { PL_TEAMS } from "@/lib/lms-teams";
 
 const STATUS_CONFIG = {
   upcoming:    { label: "Upcoming",    Icon: Clock,        color: "text-blue-600",  bg: "bg-blue-50",  border: "border-blue-200"  },
@@ -378,8 +379,21 @@ export default function GroupDetailPage() {
   const createLmsCompetition = async () => {
     if (!newLmsName.trim()) return;
     setCreatingLms(true);
+
+    // Snapshot the league's current team roster into the competition at
+    // creation time, rather than referencing the league live — so an admin
+    // editing a team list later (season changes, promotion/relegation) never
+    // retroactively alters a competition that's already in progress.
+    let teams: string[] = [];
+    if (group.lms_league_id) {
+      const { data: leagueTeams } = await supabase
+        .from("league_teams").select("team_name").eq("league_id", group.lms_league_id).order("sort_order");
+      teams = (leagueTeams ?? []).map((t: any) => t.team_name);
+    }
+    if (teams.length === 0) teams = PL_TEAMS; // legacy fallback: group predates leagues, or the chosen league has no teams configured yet
+
     const { data: comp } = await supabase.from("lms_competitions").insert({
-      group_id: group.id, name: newLmsName.trim(), status: "active", current_week: 1, weeks: [],
+      group_id: group.id, name: newLmsName.trim(), status: "active", current_week: 1, weeks: [], teams,
     }).select().single();
     if (comp) setLmsCompetitions([...lmsCompetitions, comp]);
     setNewLmsName(""); setShowCreateLms(false); setCreatingLms(false);
