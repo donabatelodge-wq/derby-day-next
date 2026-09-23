@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ChevronRight, ChevronLeft, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { PLAYER_PACKS, packForPlayers } from "@/lib/pricing";
 
 function generateInviteCode() {
   const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -113,6 +114,9 @@ function NewGroupPageInner() {
       const dates = selected.map(m => m.date).filter(Boolean).sort();
       startDate = dates[0] || null;
     }
+    // The group is created hidden/unusable ('pending_payment') — RLS only
+    // allows a self-inserted group in this exact status. It only becomes
+    // 'active' once the Stripe webhook confirms payment.
     const { data: newGroup, error } = await supabase.from("groups").insert({
       name: groupName.trim(),
       owner_email: user.email,
@@ -130,7 +134,7 @@ function NewGroupPageInner() {
       price_per_player: 0,
       start_date: startDate,
       payment_status: "paid",
-      status: "active",
+      status: "pending_payment",
     }).select().single();
 
     if (error) {
@@ -138,21 +142,27 @@ function NewGroupPageInner() {
       setSaving(false);
       return;
     }
-    toast.success(`${groupName} created!`);
-    router.push(`/group/${newGroup.id}`);
+
+    const res = await fetch("/api/stripe/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupId: newGroup.id, kind: "initial" }),
+    });
+    const checkoutData = await res.json();
+    if (!res.ok || !checkoutData.url) {
+      toast.error(checkoutData.error || "Couldn't start payment. Please try again.");
+      setSaving(false);
+      return;
+    }
+    window.location.href = checkoutData.url;
   };
 
   const toggleMeeting = (id: string) => {
     setSelectedMeetingIds(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
   };
 
-  const packOptions = [
-    { players: 20, price: 20 },
-    { players: 30, price: 30 },
-    { players: 40, price: 40 },
-    { players: 50, price: 50 },
-  ];
-  const pack = packOptions.find(p => p.players === maxPlayers) || packOptions[0];
+  const packOptions = PLAYER_PACKS;
+  const pack = packForPlayers(maxPlayers);
   const currSymbol = CURRENCIES.find(c => c.code === currency)?.symbol || "€";
 
   return (
@@ -380,7 +390,7 @@ function NewGroupPageInner() {
             <button onClick={handleCreate} disabled={saving}
               className="w-full h-14 rounded-2xl text-white font-black text-base disabled:opacity-40 transition-all active:scale-95"
               style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
-              {saving ? "Creating..." : "Create Group 🎉"}
+              {saving ? "Redirecting to payment..." : "Continue to Payment 🎉"}
             </button>
           )}
         </div>
