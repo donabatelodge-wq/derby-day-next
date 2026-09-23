@@ -32,6 +32,7 @@ export interface Group {
   payment_status: PaymentStatus;
   series_id: string | null;
   status: GroupStatus;
+  lms_league_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -103,4 +104,21 @@ export interface LeaderboardRow {
   email: string;
   total: number;
   participantName: string | null;
+}
+
+export interface League {
+  id: string;
+  name: string;
+  country: string | null;
+  active: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface LeagueTeam {
+  id: string;
+  league_id: string;
+  team_name: string;
+  sort_order: number;
+  created_at: string;
 }
