@@ -132,7 +132,9 @@ function NewGroupPageInner() {
     }
     // The group is created hidden/unusable ('pending_payment') — RLS only
     // allows a self-inserted group in this exact status. It only becomes
-    // 'active' once the Stripe webhook confirms payment.
+    // 'active' once the Stripe webhook confirms payment (or the checkout
+    // route bypasses payment directly, if an admin has switched payments off
+    // in /admin/settings for testing).
     const { data: newGroup, error } = await supabase.from("groups").insert({
       name: groupName.trim(),
       owner_email: user.email,
@@ -166,8 +168,20 @@ function NewGroupPageInner() {
       body: JSON.stringify({ groupId: newGroup.id, kind: "initial" }),
     });
     const checkoutData = await res.json();
-    if (!res.ok || !checkoutData.url) {
+    if (!res.ok) {
       toast.error(checkoutData.error || "Couldn't start payment. Please try again.");
+      setSaving(false);
+      return;
+    }
+    if (checkoutData.bypassed) {
+      // Admin has switched payments off in /admin/settings — the group was
+      // already activated server-side, no Stripe redirect needed.
+      toast.success("Payments are in test mode — group activated without charging.");
+      router.push(`/group/${newGroup.id}`);
+      return;
+    }
+    if (!checkoutData.url) {
+      toast.error("Couldn't start payment. Please try again.");
       setSaving(false);
       return;
     }
