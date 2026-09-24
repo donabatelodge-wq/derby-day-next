@@ -413,7 +413,6 @@ export default function GroupDetailPage() {
   };
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const todayMeeting = meetings.find(m => m.date === todayStr);
 
   const tabs = [
     { id: "leaderboard", label: "Leaderboard" },
@@ -567,12 +566,19 @@ export default function GroupDetailPage() {
           </div>
 
           <div className="flex flex-col gap-3">
-            {group.type === "horse_racing" && todayMeeting && (
-              <Link href={`/enter-tips?meetingId=${todayMeeting.id}&groupId=${group.id}`}
+            {group.type === "horse_racing" && meetings.length === 1 && (
+              <Link href={`/enter-tips?meetingId=${meetings[0].id}&groupId=${group.id}`}
                 className="flex items-center justify-center gap-2 w-full h-14 rounded-2xl text-lg font-black text-white active:scale-95 transition-all"
                 style={{ background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)" }}>
                 🐴 Select Horses
               </Link>
+            )}
+            {group.type === "horse_racing" && meetings.length > 1 && (
+              <button onClick={() => setActiveTab("meetings")}
+                className="flex items-center justify-center gap-2 w-full h-14 rounded-2xl text-lg font-black text-white active:scale-95 transition-all"
+                style={{ background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)" }}>
+                🐴 Select Horses ({meetings.length} meetings)
+              </button>
             )}
 
             {isOwner && (
