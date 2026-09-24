@@ -7,7 +7,7 @@ import { AddToHomeScreenBanner } from "@/components/home/add-to-homescreen-banne
 export default async function HomePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/signup");
 
   const { data: profile } = await supabase
     .from("profiles").select("role").eq("id", user.id).single();
