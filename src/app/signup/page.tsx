@@ -98,7 +98,7 @@ export default function SignupPage() {
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="Jim Byrne"
+                placeholder="Your name"
                 className="w-full h-14 rounded-xl border border-slate-200 px-4 text-base focus:outline-none focus:ring-2 focus:ring-green-400 bg-slate-50"
               />
             </div>
