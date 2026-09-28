@@ -1,9 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import {
+  getDeferredInstallPrompt,
+  clearDeferredInstallPrompt,
+  subscribeInstallPromptAvailable,
+} from "@/lib/install-prompt";
+
+const IOS_OVERLAY_FLAG_KEY = "derbyday_show_a2hs_overlay";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,6 +18,22 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [platform, setPlatform] = useState<"ios" | "android" | null>(null);
+  const [canInstall, setCanInstall] = useState(false);
+
+  useEffect(() => {
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true;
+    if (isStandalone) return; // already installed — nothing to offer
+
+    const ua = window.navigator.userAgent.toLowerCase();
+    if (/iphone|ipad|ipod/.test(ua)) setPlatform("ios");
+    else if (/android/.test(ua)) setPlatform("android");
+
+    setCanInstall(!!getDeferredInstallPrompt());
+    return subscribeInstallPromptAvailable(setCanInstall);
+  }, []);
 
   const handleLogin = async () => {
     setLoading(true);
@@ -20,11 +43,46 @@ export default function LoginPage() {
     if (error) {
       setError(error.message);
       setLoading(false);
-    } else {
-      router.push("/");
-      router.refresh();
+      return;
     }
+
+    // Android: if the browser's install prompt is ready, fire it right here
+    // as part of the same tap — this is the one platform where "Sign In and
+    // Add Shortcut" can really do both things in one button.
+    if (platform === "android") {
+      const prompt = getDeferredInstallPrompt();
+      if (prompt) {
+        try {
+          prompt.prompt();
+          await prompt.userChoice;
+        } catch {
+          // user dismissed it or the prompt was already used — fine either way
+        }
+        clearDeferredInstallPrompt();
+      }
+    }
+
+    // iPhone: there's no equivalent button-triggerable install — instead,
+    // flag the home page to show one clear "add to home screen" overlay
+    // right after this first sign-in, instead of relying on a banner that's
+    // easy to miss under the phone's own "Save Password" prompt.
+    if (platform === "ios") {
+      try {
+        sessionStorage.setItem(IOS_OVERLAY_FLAG_KEY, "true");
+      } catch {
+        // sessionStorage unavailable — just skip the overlay, not worth failing login over
+      }
+    }
+
+    router.push("/");
+    router.refresh();
   };
+
+  const buttonLabel = loading
+    ? "Signing in..."
+    : platform === "android" && canInstall
+      ? "Sign In and Add Shortcut"
+      : "Sign In";
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-5"
@@ -87,7 +145,7 @@ export default function LoginPage() {
               className="w-full h-12 rounded-xl text-white font-bold text-base disabled:opacity-50 transition-all active:scale-95"
               style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {buttonLabel}
             </button>
           </div>
 
