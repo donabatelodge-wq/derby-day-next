@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import { Toaster } from "sonner";
 import { AppHeader } from "@/components/layout/app-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { InstallPromptListener } from "@/components/pwa/install-prompt-listener";
 import "./globals.css";
 
 const geist = Geist({
@@ -45,6 +46,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col overscroll-none">
+        <InstallPromptListener />
         <AppHeader />
         <main className="flex-1" style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom))" }}>
           {children}
