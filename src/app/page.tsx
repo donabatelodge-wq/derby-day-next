@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { HomeButtons } from "@/components/home/home-buttons";
 import { AddToHomeScreenBanner } from "@/components/home/add-to-homescreen-banner";
+import { IosAddToHomeScreenOverlay } from "@/components/home/ios-add-to-homescreen-overlay";
 
 export default async function HomePage() {
   const supabase = await createClient();
