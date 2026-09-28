@@ -46,6 +46,7 @@ export default async function HomePage() {
         <div className="w-full max-w-lg">
 
           <AddToHomeScreenBanner />
+          <IosAddToHomeScreenOverlay />
 
           {myGroups.length > 0 && (
             <div className="w-full mb-6">
