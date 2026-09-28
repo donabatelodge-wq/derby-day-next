@@ -33,5 +33,5 @@ export function clearDeferredInstallPrompt() {
 
 export function subscribeInstallPromptAvailable(listener: Listener) {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => { listeners.delete(listener); };
 }
