@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Users } from "lucide-react";
@@ -18,15 +18,23 @@ export default function JoinContent() {
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
   const [previewGroup, setPreviewGroup] = useState<any>(null);
+  const [initDone, setInitDone] = useState(false);
+  const autoTried = useRef(false);
+  const wantsAuto = searchParams.get("auto") === "1";
 
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push(`/login?next=/join?code=${joinCode}&pin=${joinPin}`); return; }
+      if (!user) {
+        const target = `/join?code=${encodeURIComponent(joinCode)}&pin=${encodeURIComponent(joinPin)}&auto=1`;
+        router.push(`/signup?next=${encodeURIComponent(target)}`);
+        return;
+      }
       setUserEmail(user.email ?? "");
 
       const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
-      if (profile?.full_name) setJoinName(profile.full_name);
+      const knownName = profile?.full_name || (user.user_metadata as any)?.full_name;
+      if (knownName) setJoinName(knownName);
 
       if (!joinCode && typeof window !== "undefined") {
         const pendingCode = localStorage.getItem("pendingInviteCode");
@@ -38,9 +46,21 @@ export default function JoinContent() {
           localStorage.removeItem("pendingInvitePin");
         }
       }
+      setInitDone(true);
     };
     init();
   }, []);
+
+  // One-flow join: arriving from an invite (auto=1) with a code, a 4-digit PIN
+  // and a known name joins straight away. PIN and capacity are still checked
+  // server-side by join_group().
+  useEffect(() => {
+    if (!initDone || !wantsAuto || autoTried.current) return;
+    if (joinCode.trim() && joinPin.length === 4 && joinName.trim()) {
+      autoTried.current = true;
+      handleJoin();
+    }
+  }, [initDone, joinCode, joinPin, joinName]);
 
   useEffect(() => {
     if (joinCode.length >= 5) {
@@ -80,6 +100,15 @@ export default function JoinContent() {
     setJoining(false);
     router.push(`/group/${data.group.id}`);
   };
+
+  if (wantsAuto && !joinError && (!initDone || (autoTried.current && joining))) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: "var(--bg)" }}>
+        <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Joining the competition…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-5"
