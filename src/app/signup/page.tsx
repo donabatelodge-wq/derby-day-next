@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
@@ -11,33 +11,89 @@ function getNext(): string | null {
   return n && n.startsWith("/") && !n.startsWith("//") ? n : null;
 }
 
+// Pick a "go to your inbox" link from the email's domain. Returns null for
+// domains we don't recognise (work addresses etc.) — we just skip the button.
+function getMailLink(email: string): { label: string; href: string } | null {
+  const domain = email.split("@")[1]?.trim().toLowerCase() ?? "";
+  const isIphone = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  if (["gmail.com", "googlemail.com"].includes(domain))
+    return { label: "Open Gmail", href: "https://mail.google.com/mail/u/0/#inbox" };
+  if (["outlook.com", "hotmail.com", "hotmail.co.uk", "live.com", "live.ie", "msn.com", "outlook.ie"].includes(domain))
+    return { label: "Open Outlook", href: "https://outlook.live.com/mail/0/inbox" };
+  if (["icloud.com", "me.com", "mac.com"].includes(domain))
+    // On iPhone, message:// opens the Mail app directly; elsewhere use iCloud web mail.
+    return isIphone
+      ? { label: "Open Mail", href: "message://" }
+      : { label: "Open iCloud Mail", href: "https://www.icloud.com/mail" };
+  if (["yahoo.com", "yahoo.co.uk", "yahoo.ie", "ymail.com"].includes(domain))
+    return { label: "Open Yahoo Mail", href: "https://mail.yahoo.com/d/folders/1" };
+  return null;
+}
+
 export default function SignupPage() {
   const [email, setEmail] = useState("");
+  const [confirmEmail, setConfirmEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [resendMsg, setResendMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  const redirectUrl = () => {
+    const next = getNext();
+    // After they click the confirmation link they land back on the invite.
+    return `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`;
+  };
+
+  const emailsMatch = email.trim().toLowerCase() === confirmEmail.trim().toLowerCase();
 
   const handleSignup = async () => {
+    if (!emailsMatch) {
+      setError("The two email addresses don't match — please check for typos.");
+      return;
+    }
     setLoading(true);
     setError(null);
     const supabase = createClient();
-    const next = getNext();
     const { error } = await supabase.auth.signUp({
-      email,
+      email: email.trim(),
       password,
       options: {
         data: { full_name: name },
-        // After they click the confirmation link they land back on the invite.
-        emailRedirectTo: `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`,
+        emailRedirectTo: redirectUrl(),
       },
     });
     if (error) {
       setError(error.message);
       setLoading(false);
     } else {
+      setCooldown(60);
       setDone(true);
+    }
+  };
+
+  const handleResend = async () => {
+    setResendMsg(null);
+    const supabase = createClient();
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim(),
+      options: { emailRedirectTo: redirectUrl() },
+    });
+    if (error) {
+      setResendMsg(error.message);
+    } else {
+      setResendMsg("Sent again — check your inbox and Junk folder.");
+      setCooldown(60);
     }
   };
 
@@ -53,6 +109,7 @@ export default function SignupPage() {
   };
 
   if (done) {
+    const mailLink = getMailLink(email);
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-5" style={shellStyle}>
         <div className="w-full max-w-md">
@@ -63,16 +120,45 @@ export default function SignupPage() {
             </div>
             <h1 className="text-3xl font-black text-white mb-2">Check your email</h1>
             <p className="text-slate-300 text-sm">
-              We sent a confirmation link to <span className="text-green-400 font-semibold">{email}</span>. Click it to activate your account.
+              We sent a confirmation link to
             </p>
+            <p className="text-green-400 font-bold text-lg break-all mt-1">{email.trim()}</p>
+            <p className="text-slate-300 text-sm mt-1">Click it to activate your account.</p>
+            <button
+              onClick={() => { setDone(false); setConfirmEmail(""); setCooldown(0); setResendMsg(null); }}
+              className="mt-3 text-sm text-slate-400 underline">
+              Wrong address? Go back
+            </button>
           </div>
 
-          <div className="w-full rounded-3xl px-7 py-8 bg-white shadow-2xl">
-            <Link href={loginHref}
-              className="block w-full h-14 rounded-xl text-white font-bold text-base text-center leading-[3.5rem] transition-all active:scale-95"
-              style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
-              Back to Sign In
-            </Link>
+          <div className="w-full rounded-3xl px-7 py-8 bg-white shadow-2xl space-y-3">
+            {mailLink && (
+              <a href={mailLink.href} target="_blank" rel="noopener noreferrer"
+                className="block w-full h-14 rounded-xl text-white font-bold text-base text-center leading-[3.5rem] transition-all active:scale-95"
+                style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
+                📬 {mailLink.label}
+              </a>
+            )}
+
+            <p className="text-sm text-slate-500 text-center pt-1">
+              Can&apos;t see it? Check your <span className="font-semibold">Junk / Spam</span> folder — it&apos;s from Derby Day.
+            </p>
+
+            <button
+              onClick={handleResend}
+              disabled={cooldown > 0}
+              className="block w-full h-12 rounded-xl border-2 border-slate-200 text-slate-700 font-bold text-sm disabled:opacity-50 transition-all active:scale-95">
+              {cooldown > 0 ? `Resend email (${cooldown}s)` : "Resend email"}
+            </button>
+
+            {resendMsg && <p className="text-xs text-center text-slate-500">{resendMsg}</p>}
+
+            <p className="text-center text-sm text-slate-500 pt-2">
+              Already confirmed?{" "}
+              <Link href={loginHref} className="text-green-600 font-bold hover:underline">
+                Sign in
+              </Link>
+            </p>
           </div>
         </div>
       </div>
@@ -125,6 +211,20 @@ export default function SignupPage() {
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Confirm email</label>
+              <input
+                type="email"
+                value={confirmEmail}
+                onChange={e => setConfirmEmail(e.target.value)}
+                onPaste={e => e.preventDefault()}
+                placeholder="Type your email again"
+                className="w-full h-14 rounded-xl border border-slate-200 px-4 text-base focus:outline-none focus:ring-2 focus:ring-green-400 bg-slate-50"
+              />
+              {confirmEmail && !emailsMatch && (
+                <p className="text-xs text-red-600 mt-1.5">Emails don&apos;t match yet</p>
+              )}
+            </div>
+            <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
               <input
                 type="password"
@@ -138,7 +238,7 @@ export default function SignupPage() {
 
             <button
               onClick={handleSignup}
-              disabled={loading || !email || !password || !name}
+              disabled={loading || !email || !confirmEmail || !emailsMatch || !password || !name}
               className="w-full h-14 rounded-xl text-white font-bold text-base disabled:opacity-50 transition-all active:scale-95"
               style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}
             >
