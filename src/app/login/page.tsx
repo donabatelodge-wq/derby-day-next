@@ -20,6 +20,11 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [platform, setPlatform] = useState<"ios" | "android" | null>(null);
   const [canInstall, setCanInstall] = useState(false);
+  const [nextParam, setNextParam] = useState<string | null>(null);
+
+  useEffect(() => {
+    setNextParam(new URLSearchParams(window.location.search).get("next"));
+  }, []);
 
   useEffect(() => {
     const isStandalone =
@@ -74,7 +79,8 @@ export default function LoginPage() {
       }
     }
 
-    router.push("/");
+    const n = new URLSearchParams(window.location.search).get("next");
+    router.push(n && n.startsWith("/") && !n.startsWith("//") ? n : "/");
     router.refresh();
   };
 
@@ -151,7 +157,9 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-slate-500 mt-6">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-green-600 font-bold hover:underline">
+            <Link
+              href={nextParam ? `/signup?next=${encodeURIComponent(nextParam)}` : "/signup"}
+              className="text-green-600 font-bold hover:underline">
               Sign up free
             </Link>
           </p>
