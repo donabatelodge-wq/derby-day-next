@@ -311,7 +311,7 @@ export default function GroupDetailPage() {
   };
 
   const handleShareInvite = () => {
-    const inviteUrl = `${window.location.origin}/join?code=${group.invite_code}&pin=${group.join_pin || ""}`;
+    const inviteUrl = `${window.location.origin}/invite?code=${group.invite_code}&pin=${group.join_pin || ""}`;
     const emoji = group.type === "last_man_standing" ? "⚽" : "🏇";
     const shareText = `${emoji} You're invited to join "${group.name}" on Derby Day!\n\nLogin or create a free account to join 👇\n${inviteUrl}`;
     if (navigator.share) navigator.share({ title: `Join ${group.name}`, text: shareText }).catch(() => {});
