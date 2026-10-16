@@ -21,6 +21,27 @@ export default function LoginPage() {
   const [platform, setPlatform] = useState<"ios" | "android" | null>(null);
   const [canInstall, setCanInstall] = useState(false);
   const [nextParam, setNextParam] = useState<string | null>(null);
+  const [needsConfirm, setNeedsConfirm] = useState(false);
+  const [resendMsg, setResendMsg] = useState<string | null>(null);
+
+  const handleResendConfirmation = async () => {
+    setResendMsg(null);
+    const supabase = createClient();
+    const n = new URLSearchParams(window.location.search).get("next");
+    const next = n && n.startsWith("/") && !n.startsWith("//") ? n : null;
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim(),
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`,
+      },
+    });
+    setResendMsg(
+      error
+        ? error.message
+        : "Confirmation email sent — check your inbox and your Junk/Spam folder."
+    );
+  };
 
   useEffect(() => {
     setNextParam(new URLSearchParams(window.location.search).get("next"));
@@ -43,10 +64,17 @@ export default function LoginPage() {
   const handleLogin = async () => {
     setLoading(true);
     setError(null);
+    setNeedsConfirm(false);
+    setResendMsg(null);
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) {
-      setError(error.message);
+      if (/not confirmed/i.test(error.message)) {
+        setNeedsConfirm(true);
+        setError("Your email isn't confirmed yet. Click the link in the email we sent you.");
+      } else {
+        setError(error.message);
+      }
       setLoading(false);
       return;
     }
@@ -119,6 +147,19 @@ export default function LoginPage() {
           {error && (
             <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
               {error}
+              {needsConfirm && (
+                <div className="mt-2">
+                  <button onClick={handleResendConfirmation} className="font-bold underline">
+                    Resend confirmation email
+                  </button>
+                  <p className="mt-1 text-xs text-red-600">Also check your Junk/Spam folder.</p>
+                </div>
+              )}
+            </div>
+          )}
+          {resendMsg && (
+            <div className="mb-4 p-3 rounded-xl bg-green-50 border border-green-200 text-sm text-green-800">
+              {resendMsg}
             </div>
           )}
 
