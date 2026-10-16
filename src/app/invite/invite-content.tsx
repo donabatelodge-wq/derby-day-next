@@ -16,18 +16,14 @@ export default function InviteContent() {
   const [meetings, setMeetings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
     const load = async () => {
+      // Logged-out visitors now see the invite first — that's the motivation
+      // to create an account. Sign-up happens when they tap Join.
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        if (typeof window !== "undefined") {
-          localStorage.setItem("pendingInviteCode", code);
-          localStorage.setItem("pendingInvitePin", pin);
-        }
-        router.push(`/login?next=/invite?code=${code}&pin=${pin}`);
-        return;
-      }
+      setLoggedIn(!!user);
       if (!code) { setNotFound(true); setLoading(false); return; }
 
       // Safe preview only — no join_pin, owner_email, entry_fee, or member email
@@ -48,8 +44,11 @@ export default function InviteContent() {
     load();
   }, [code]);
 
+  const joinTarget = `/join?code=${encodeURIComponent(code)}&pin=${encodeURIComponent(pin)}&auto=1`;
+
   const handleJoin = () => {
-    router.push(`/join?code=${code}&pin=${pin}`);
+    if (loggedIn) router.push(joinTarget);
+    else router.push(`/signup?next=${encodeURIComponent(joinTarget)}`);
   };
 
   if (loading) return (
@@ -77,6 +76,7 @@ export default function InviteContent() {
 
   const isLms = group.type === "last_man_standing";
   const playerCount = group.member_count ?? 0;
+  const meetingCount = meetings.length || (group.meeting_ids || []).length;
   const firstMeetingDate = meetings.length > 0
     ? (() => { try { return format(new Date(meetings[0].date), "EEE d MMM"); } catch { return "TBC"; } })()
     : "TBC";
@@ -118,11 +118,11 @@ export default function InviteContent() {
             style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
             <span className="text-lg">📅</span>
             <p className="text-white/50 text-xs font-semibold uppercase tracking-wide">Meetings</p>
-            <p className="text-white font-bold text-lg">{meetings.length}</p>
+            <p className="text-white font-bold text-lg">{meetingCount}</p>
             <div className="text-white/40 text-xs leading-relaxed">
               {meetings.slice(0, 3).map(m => <p key={m.id} className="truncate">{m.name}</p>)}
               {meetings.length > 3 && <p>+{meetings.length - 3} more</p>}
-              {meetings.length === 0 && <p>TBC</p>}
+              {meetingCount === 0 && <p>TBC</p>}
             </div>
           </div>
           <div className="rounded-3xl p-4 flex flex-col gap-1"
@@ -155,8 +155,19 @@ export default function InviteContent() {
 
         <button onClick={handleJoin}
           className="w-full h-16 rounded-2xl text-lg font-black text-white transition-transform active:scale-95 join-pulse">
-          🎯 Join This Competition
+          {loggedIn ? "🎯 Join This Competition" : "🎯 Create Free Account & Join"}
         </button>
+
+        {!loggedIn && (
+          <p className="text-white/60 text-sm">
+            Already have an account?{" "}
+            <button
+              onClick={() => router.push(`/login?next=${encodeURIComponent(joinTarget)}`)}
+              className="text-green-400 font-bold underline">
+              Sign in
+            </button>
+          </p>
+        )}
 
         <p className="text-white/25 text-xs">Powered by Derby Day 🏇</p>
       </div>
