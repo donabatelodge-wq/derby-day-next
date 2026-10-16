@@ -4,6 +4,13 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
+// Only allow same-site relative paths, so ?next= can't bounce someone elsewhere.
+function getNext(): string | null {
+  if (typeof window === "undefined") return null;
+  const n = new URLSearchParams(window.location.search).get("next");
+  return n && n.startsWith("/") && !n.startsWith("//") ? n : null;
+}
+
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,12 +23,14 @@ export default function SignupPage() {
     setLoading(true);
     setError(null);
     const supabase = createClient();
+    const next = getNext();
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: name },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        // After they click the confirmation link they land back on the invite.
+        emailRedirectTo: `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`,
       },
     });
     if (error) {
@@ -31,6 +40,9 @@ export default function SignupPage() {
       setDone(true);
     }
   };
+
+  const next = getNext();
+  const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : "/login";
 
   const shellStyle = {
     background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f4c2a 100%)",
@@ -56,7 +68,7 @@ export default function SignupPage() {
           </div>
 
           <div className="w-full rounded-3xl px-7 py-8 bg-white shadow-2xl">
-            <Link href="/login"
+            <Link href={loginHref}
               className="block w-full h-14 rounded-xl text-white font-bold text-base text-center leading-[3.5rem] transition-all active:scale-95"
               style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
               Back to Sign In
@@ -136,7 +148,7 @@ export default function SignupPage() {
 
           <p className="text-center text-sm text-slate-500 mt-6">
             Already have an account?{" "}
-            <Link href="/login" className="text-green-600 font-bold hover:underline">
+            <Link href={loginHref} className="text-green-600 font-bold hover:underline">
               Sign in
             </Link>
           </p>
