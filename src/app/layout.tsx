@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { AppHeader } from "@/components/layout/app-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { InstallPromptListener } from "@/components/pwa/install-prompt-listener";
+import { AddToHomeScreenPrompt } from "@/components/pwa/add-to-homescreen-prompt";
 import "./globals.css";
 
 const geist = Geist({
@@ -52,6 +53,7 @@ export default function RootLayout({
           {children}
         </main>
         <BottomNav />
+        <AddToHomeScreenPrompt />
         <Toaster
           position="top-center"
           toastOptions={{
