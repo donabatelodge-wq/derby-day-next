@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
@@ -39,14 +39,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const t = setTimeout(() => setCooldown(c => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [cooldown]);
 
   const redirectUrl = () => {
     const next = getNext();
@@ -76,7 +69,6 @@ export default function SignupPage() {
       setError(error.message);
       setLoading(false);
     } else {
-      setCooldown(60);
       setDone(true);
     }
   };
@@ -90,10 +82,14 @@ export default function SignupPage() {
       options: { emailRedirectTo: redirectUrl() },
     });
     if (error) {
-      setResendMsg(error.message);
+      // Supabase allows one email per address per minute — say so in plain words.
+      setResendMsg(
+        /seconds|rate limit/i.test(error.message)
+          ? "Just sent one — give it a minute, then try again."
+          : error.message
+      );
     } else {
       setResendMsg("Sent again — check your inbox and Junk folder.");
-      setCooldown(60);
     }
   };
 
@@ -110,6 +106,7 @@ export default function SignupPage() {
 
   if (done) {
     const mailLink = getMailLink(email);
+    const isIcloud = ["icloud.com", "me.com", "mac.com"].includes(email.split("@")[1]?.trim().toLowerCase() ?? "");
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-5" style={shellStyle}>
         <div className="w-full max-w-md">
@@ -125,7 +122,7 @@ export default function SignupPage() {
             <p className="text-green-400 font-bold text-lg break-all mt-1">{email.trim()}</p>
             <p className="text-slate-300 text-sm mt-1">Click it to activate your account.</p>
             <button
-              onClick={() => { setDone(false); setConfirmEmail(""); setCooldown(0); setResendMsg(null); }}
+              onClick={() => { setDone(false); setConfirmEmail(""); setResendMsg(null); }}
               className="mt-3 text-sm text-slate-400 underline">
               Wrong address? Go back
             </button>
@@ -141,14 +138,22 @@ export default function SignupPage() {
             )}
 
             <p className="text-sm text-slate-500 text-center pt-1">
-              Can&apos;t see it? Check your <span className="font-semibold">Junk / Spam</span> folder — it&apos;s from Derby Day.
+              {isIcloud ? (
+                <>
+                  iCloud often puts our email in <span className="font-semibold">Junk</span>. Open Junk, find the
+                  email from Derby Day and tap <span className="font-semibold">Not Junk</span>.
+                </>
+              ) : (
+                <>
+                  Can&apos;t see it? Check your <span className="font-semibold">Junk / Spam</span> folder — it&apos;s from Derby Day.
+                </>
+              )}
             </p>
 
             <button
               onClick={handleResend}
-              disabled={cooldown > 0}
-              className="block w-full h-12 rounded-xl border-2 border-slate-200 text-slate-700 font-bold text-sm disabled:opacity-50 transition-all active:scale-95">
-              {cooldown > 0 ? `Resend email (${cooldown}s)` : "Resend email"}
+              className="block w-full h-12 rounded-xl border-2 border-slate-200 text-slate-700 font-bold text-sm transition-all active:scale-95">
+              Resend email
             </button>
 
             {resendMsg && <p className="text-xs text-center text-slate-500">{resendMsg}</p>}
