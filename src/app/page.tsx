@@ -4,6 +4,7 @@ import Link from "next/link";
 import { HomeButtons } from "@/components/home/home-buttons";
 import { AddToHomeScreenBanner } from "@/components/home/add-to-homescreen-banner";
 import { IosAddToHomeScreenOverlay } from "@/components/home/ios-add-to-homescreen-overlay";
+import { HowItWorksCard } from "@/components/home/how-it-works-card";
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -97,6 +98,8 @@ export default async function HomePage() {
           )}
 
           <HomeButtons content={content} isAdmin={isAdmin} userEmail={user.email ?? ""} />
+
+          {content.show_how_competition_works !== false && <HowItWorksCard />}
 
         </div>
       </div>
