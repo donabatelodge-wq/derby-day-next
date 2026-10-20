@@ -12,6 +12,8 @@ const DEFAULT_CONTENT = {
   show_title: true,
   show_subtitle: true,
 
+  show_how_competition_works: true,
+
   show_info_button_1: false,
   info_button_1_label: "ℹ️ App Info",
   info_button_1_color: "#facc15",
@@ -172,6 +174,12 @@ export default function AdminWelcomeContent() {
               className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm" />
           </div>
         </div>
+
+        <p className="text-xs font-semibold uppercase tracking-widest px-1" style={{ color: "var(--text-muted)" }}>Cards</p>
+
+        <ButtonSection title="How A Racing Competition Works" showKey="show_how_competition_works"
+          form={form} setForm={setForm}
+          staticNote="Explanation card shown under the buttons. Text is fixed in code." />
 
         <p className="text-xs font-semibold uppercase tracking-widest px-1" style={{ color: "var(--text-muted)" }}>Buttons</p>
 
