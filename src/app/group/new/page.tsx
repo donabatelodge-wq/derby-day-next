@@ -16,6 +16,10 @@ function generateInviteCode() {
 const STEP_LABELS = ["Type", "Competition", "Details", "Players", "Confirm"];
 const TOTAL_STEPS = 5;
 
+// Colour of the see-through "FREE FOR NOW" band. Raise the last number (0–1)
+// for a bolder band, lower it for a fainter one.
+const FREE_BANNER_BG = "rgba(22, 163, 74, 0.5)";
+
 const CURRENCIES = [
   { code: "eur", label: "EUR €", symbol: "€" },
   { code: "gbp", label: "GBP £", symbol: "£" },
@@ -39,6 +43,23 @@ function InlineContinueButton({ disabled, onClick }: { disabled: boolean; onClic
       style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
       Continue <ChevronRight className="w-5 h-5" />
     </button>
+  );
+}
+
+function FreeBanner() {
+  return (
+    <span aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center">
+      <span
+        className="block text-center py-1.5 text-[11px] font-black tracking-widest text-white"
+        style={{
+          width: "150%",
+          transform: "rotate(-25deg)",
+          background: FREE_BANNER_BG,
+          textShadow: "0 1px 2px rgba(0,0,0,0.35)",
+        }}>
+        FREE FOR NOW
+      </span>
+    </span>
   );
 }
 
@@ -67,6 +88,8 @@ function NewGroupPageInner() {
   const [maxPlayers, setMaxPlayers] = useState(20);
   const [currency, setCurrency] = useState("eur");
   const [saving, setSaving] = useState(false);
+  // True only when an admin has switched payments off in /admin/settings.
+  const [paymentsOff, setPaymentsOff] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -77,6 +100,14 @@ function NewGroupPageInner() {
       if (profile?.full_name) setDisplayName(profile.full_name);
     };
     init();
+  }, []);
+
+  // Is payment currently switched off? Drives the "FREE FOR NOW" banners.
+  useEffect(() => {
+    fetch("/api/payments-status", { cache: "no-store" })
+      .then(r => r.json())
+      .then(d => setPaymentsOff(d?.enabled === false))
+      .catch(() => setPaymentsOff(false));
   }, []);
 
   useEffect(() => {
@@ -177,7 +208,7 @@ function NewGroupPageInner() {
     if (checkoutData.bypassed) {
       // Admin has switched payments off in /admin/settings — the group was
       // already activated server-side, no Stripe redirect needed.
-      toast.success("Payments are in test mode — group activated without charging.");
+      toast.success("Your group is ready! 🎉");
       router.push(`/group/${newGroup.id}`);
       return;
     }
@@ -382,14 +413,22 @@ function NewGroupPageInner() {
             <div className="grid grid-cols-2 gap-3">
               {packOptions.map(({ players, price }) => (
                 <button key={players} onClick={() => setMaxPlayers(players)}
-                  className={`rounded-2xl border-2 p-5 text-left transition-all active:scale-95 shadow-sm ${maxPlayers === players ? "border-green-500 bg-green-50" : "border-transparent bg-white"}`}>
+                  className={`relative overflow-hidden rounded-2xl border-2 p-5 text-left transition-all active:scale-95 shadow-sm ${maxPlayers === players ? "border-green-500 bg-green-50" : "border-transparent bg-white"}`}>
                   <p className="text-3xl font-black text-slate-900">{players}</p>
                   <p className="text-xs text-slate-400 mt-0.5">players max</p>
-                  <p className="text-xl font-bold text-green-600 mt-3">{currSymbol}{price}</p>
-                  <p className="text-xs text-green-500">platform fee</p>
+                  <div className={paymentsOff ? "opacity-70" : ""}>
+                    <p className="text-xl font-bold text-green-600 mt-3">{currSymbol}{price}</p>
+                    <p className="text-xs text-green-500">platform fee</p>
+                  </div>
+                  {paymentsOff && <FreeBanner />}
                 </button>
               ))}
             </div>
+            {paymentsOff && (
+              <p className="text-xs text-slate-500 text-center">
+                Free while we&apos;re getting started. Derby Day will become a paid service in the future.
+              </p>
+            )}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Currency</label>
               <select value={currency} onChange={e => setCurrency(e.target.value)}
@@ -412,12 +451,22 @@ function NewGroupPageInner() {
               <SummaryRow label="Your role" value={ownerPlaying ? "Owner + Player" : "Owner only"} />
               <SummaryRow label="Max players" value={`${maxPlayers} players`} />
             </div>
-            <div className="rounded-2xl p-6 text-center shadow-sm"
+            <div className="relative overflow-hidden rounded-2xl p-6 text-center shadow-sm"
               style={{ background: "linear-gradient(135deg, #0f172a 0%, #0f4c2a 100%)" }}>
-              <p className="text-green-400 text-xs font-bold uppercase tracking-widest mb-2">One-time platform fee</p>
-              <p className="text-5xl font-black text-white">{currSymbol}{pack.price}</p>
-              <p className="text-green-400 text-sm mt-1">for up to {maxPlayers} players</p>
+              <p className="text-green-400 text-xs font-bold uppercase tracking-widest mb-2">
+                {paymentsOff ? "Platform fee (free for now)" : "One-time platform fee"}
+              </p>
+              <div className={paymentsOff ? "opacity-70" : ""}>
+                <p className="text-5xl font-black text-white">{currSymbol}{pack.price}</p>
+                <p className="text-green-400 text-sm mt-1">for up to {maxPlayers} players</p>
+              </div>
+              {paymentsOff && <FreeBanner />}
             </div>
+            {paymentsOff && (
+              <p className="text-xs text-slate-500 text-center">
+                No charge today. Derby Day will become a paid service in the future.
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -436,7 +485,9 @@ function NewGroupPageInner() {
             <button onClick={handleCreate} disabled={saving}
               className="w-full h-14 rounded-2xl text-white font-black text-base disabled:opacity-40 transition-all active:scale-95"
               style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
-              {saving ? "Redirecting to payment..." : "Continue to Payment 🎉"}
+              {paymentsOff
+                ? (saving ? "Creating group..." : "Create Group 🎉")
+                : (saving ? "Redirecting to payment..." : "Continue to Payment 🎉")}
             </button>
           )}
         </div>
