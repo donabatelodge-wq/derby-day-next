@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Plus, Trash2, Calendar, Clock, Settings, Trophy } from "lucide-react";
+import { Plus, Trash2, Calendar, Clock, Settings, Trophy, Pencil } from "lucide-react";
 import Link from "next/link";
 
 const STATUS_CONFIG = {
@@ -37,6 +37,9 @@ export default function AdminMeetingsContent() {
   const [pointsForm, setPointsForm] = useState<any>({});
   const [editingCloseAt, setEditingCloseAt] = useState<string | null>(null);
   const [closeAtValue, setCloseAtValue] = useState("");
+  const [editingDetails, setEditingDetails] = useState<string | null>(null);
+  const [detailsForm, setDetailsForm] = useState({ name: "", date: "", venue: "" });
+  const [savingDetails, setSavingDetails] = useState(false);
   const [lmsCompetitions, setLmsCompetitions] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("meetings");
 
@@ -83,6 +86,33 @@ export default function AdminMeetingsContent() {
     setMeetings(prev => prev.map(m => m.id === id ? { ...m, status } : m));
     await supabase.from("meetings").update({ status }).eq("id", id);
     toast.success("Status updated!");
+  };
+
+  const startEditDetails = (m: any) => {
+    setEditingDetails(m.id);
+    setDetailsForm({
+      name: m.name || "",
+      date: m.date ? String(m.date).slice(0, 10) : "",
+      venue: m.venue || "",
+    });
+  };
+
+  const handleSaveDetails = async (id: string) => {
+    if (!detailsForm.name.trim() || !detailsForm.date) {
+      toast.error("Name and date are required.");
+      return;
+    }
+    setSavingDetails(true);
+    const { error } = await supabase.from("meetings").update({
+      name: detailsForm.name.trim(),
+      date: detailsForm.date,
+      venue: detailsForm.venue.trim(),
+    }).eq("id", id);
+    setSavingDetails(false);
+    if (error) { toast.error("Failed to save changes."); return; }
+    setEditingDetails(null);
+    await load();
+    toast.success("Meeting updated!");
   };
 
   const handleSavePoints = async (id: string) => {
@@ -202,154 +232,3 @@ export default function AdminMeetingsContent() {
                     <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}
                       className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm bg-white">
                       <option value="upcoming">Upcoming</option>
-                      <option value="open">Open for entries</option>
-                      <option value="closed">Closed</option>
-                      <option value="completed">Completed</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Venue</label>
-                  <input placeholder="Optional" value={form.venue} onChange={e => setForm({ ...form, venue: e.target.value })}
-                    className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>
-                    <Clock className="w-3 h-3 inline mr-1" />Auto-close time
-                  </label>
-                  <input type="datetime-local" value={form.close_at} onChange={e => setForm({ ...form, close_at: e.target.value })}
-                    className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-2 block" style={{ color: "var(--text-muted)" }}>Points per placing</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[["🥇 1st", "points_1st"], ["🥈 2nd", "points_2nd"], ["🥉 3rd", "points_3rd"]].map(([label, key]) => (
-                      <div key={key}>
-                        <label className="text-xs mb-1 block" style={{ color: "var(--text-muted)" }}>{label}</label>
-                        <input type="number" min="0" value={(form as any)[key]}
-                          onChange={e => setForm({ ...form, [key]: Number(e.target.value) })}
-                          className="w-full h-11 rounded-xl border border-slate-200 px-2 text-sm text-center" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={handleCreate} disabled={!form.name || !form.date || saving}
-                    className="flex-1 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold disabled:opacity-50">
-                    {saving ? "Saving..." : "Create Meeting"}
-                  </button>
-                  <button onClick={() => { setShowForm(false); setForm(EMPTY_FORM); }}
-                    className="px-4 py-3.5 rounded-2xl border border-slate-200 text-sm text-slate-600">Cancel</button>
-                </div>
-              </div>
-            )}
-
-            {meetings.length === 0 ? (
-              <div className="text-center py-16" style={{ color: "var(--text-muted)" }}>
-                <Calendar className="w-8 h-8 mx-auto mb-3 opacity-40" />
-                <p>No meetings yet. Create one above.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {meetings.map(m => {
-                  const cfg = STATUS_CONFIG[m.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.upcoming;
-                  return (
-                    <div key={m.id} className="rounded-3xl p-5 border" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${cfg.color}`}>{cfg.label}</span>
-                          </div>
-                          <h2 className="font-semibold" style={{ color: "var(--text-primary)" }}>{m.name}</h2>
-                          <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
-                            {format(new Date(m.date), "EEEE, d MMMM yyyy")}
-                            {m.venue && ` · ${m.venue}`}
-                          </p>
-
-                          {editingPoints === m.id ? (
-                            <div className="mt-3 space-y-2">
-                              <div className="grid grid-cols-3 gap-2">
-                                {[["🥇 1st", "points_1st"], ["🥈 2nd", "points_2nd"], ["🥉 3rd", "points_3rd"]].map(([label, key]) => (
-                                  <div key={key}>
-                                    <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>{label} pts</p>
-                                    <input type="number" min="0" value={pointsForm[key]}
-                                      onChange={e => setPointsForm((f: any) => ({ ...f, [key]: e.target.value }))}
-                                      className="w-full h-8 rounded-lg border border-slate-200 text-center text-xs px-1" />
-                                  </div>
-                                ))}
-                              </div>
-                              <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Best Chance multiplier</p>
-                              <div className="grid grid-cols-3 gap-2">
-                                {[["🥇 1st", "best_chance_multiplier_1st"], ["🥈 2nd", "best_chance_multiplier_2nd"], ["🥉 3rd", "best_chance_multiplier_3rd"]].map(([label, key]) => (
-                                  <div key={key}>
-                                    <p className="text-xs mb-1" style={{ color: "var(--text-muted)" }}>{label} ×</p>
-                                    <input type="number" min="1" step="0.5" value={pointsForm[key]}
-                                      onChange={e => setPointsForm((f: any) => ({ ...f, [key]: e.target.value }))}
-                                      className="w-full h-8 rounded-lg border border-slate-200 text-center text-xs px-1" />
-                                  </div>
-                                ))}
-                              </div>
-                              <div className="flex gap-3 pt-1">
-                                <button onClick={() => handleSavePoints(m.id)} className="text-xs font-semibold text-emerald-600">Save</button>
-                                <button onClick={() => setEditingPoints(null)} className="text-xs text-slate-400">Cancel</button>
-                              </div>
-                            </div>
-                          ) : (
-                            <button onClick={() => { setEditingPoints(m.id); setPointsForm({ points_1st: m.points_1st ?? 3, points_2nd: m.points_2nd ?? 2, points_3rd: m.points_3rd ?? 1, best_chance_multiplier_1st: m.best_chance_multiplier_1st ?? 2, best_chance_multiplier_2nd: m.best_chance_multiplier_2nd ?? 2, best_chance_multiplier_3rd: m.best_chance_multiplier_3rd ?? 2 }); }}
-                              className="text-xs mt-1 hover:underline" style={{ color: "var(--text-muted)" }}>
-                              🥇 {m.points_1st ?? 3}pts · 🥈 {m.points_2nd ?? 2}pts · 🥉 {m.points_3rd ?? 1}pt <span className="text-amber-500 ml-1">Edit</span>
-                            </button>
-                          )}
-
-                          {editingCloseAt === m.id ? (
-                            <div className="mt-2 flex items-center gap-2">
-                              <input type="datetime-local" value={closeAtValue} onChange={e => setCloseAtValue(e.target.value)}
-                                className="h-8 rounded-lg border border-slate-200 text-xs flex-1 px-2" />
-                              <button onClick={() => handleSaveCloseAt(m.id)} className="text-xs font-semibold text-emerald-600 whitespace-nowrap">Save</button>
-                              <button onClick={() => setEditingCloseAt(null)} className="text-xs text-slate-400">Cancel</button>
-                            </div>
-                          ) : (
-                            <button onClick={() => { setEditingCloseAt(m.id); setCloseAtValue(m.close_at ? format(new Date(m.close_at), "yyyy-MM-dd'T'HH:mm") : ""); }}
-                              className="text-xs mt-1 flex items-center gap-1 hover:underline" style={{ color: "var(--text-muted)" }}>
-                              <Clock className="w-3 h-3" />
-                              {m.close_at
-                                ? <><span>Auto-close: {format(new Date(m.close_at), "d MMM, h:mm a")}</span><span className="text-amber-500 ml-1">Edit</span></>
-                                : <span className="text-amber-500">Set auto-close time</span>
-                              }
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                          <select value={m.status} onChange={e => updateStatus(m.id, e.target.value)}
-                            className="h-8 rounded-lg border border-slate-200 px-2 text-xs bg-white">
-                            <option value="upcoming">Upcoming</option>
-                            <option value="open">Open</option>
-                            <option value="closed">Closed</option>
-                            <option value="completed">Completed</option>
-                          </select>
-                          <div className="flex gap-1.5">
-                            <Link href={`/admin/races?meetingId=${m.id}`}
-                              className="w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 hover:border-slate-300 transition-colors">
-                              <Settings className="w-4 h-4 text-slate-400" />
-                            </Link>
-                            <button onClick={() => handleDelete(m.id)} disabled={deleting === m.id}
-                              className="w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 text-slate-300 hover:text-red-400 hover:border-red-200 transition-colors">
-                              {deleting === m.id
-                                ? <div className="w-4 h-4 border-2 border-red-300 border-t-transparent rounded-full animate-spin" />
-                                : <Trash2 className="w-4 h-4" />}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
