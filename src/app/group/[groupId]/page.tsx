@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import {
   Trophy, Users, Calendar, ChevronRight, Plus, X,
-  DollarSign, Swords, Clock, PlayCircle, CheckCircle2, Trash2, AlertTriangle, Archive, UserMinus
+  DollarSign, Swords, Clock, PlayCircle, CheckCircle2, Trash2, AlertTriangle, Archive, UserMinus, Mail
 } from "lucide-react";
 import Link from "next/link";
 import type { Group, Meeting, Entry } from "@/lib/types";
@@ -87,24 +87,126 @@ function GroupMembersTab({ group, payments, currentUserEmail, onGroupUpdate }: {
 }) {
   const [removing, setRemoving] = useState<string|null>(null);
   const [confirmRemove, setConfirmRemove] = useState<string|null>(null);
+  const [togglingPaid, setTogglingPaid] = useState<string|null>(null);
+  const [showReminder, setShowReminder] = useState(false);
+  const [reminderText, setReminderText] = useState("");
+  const [sending, setSending] = useState(false);
   const supabase = createClient();
   const members = group.member_emails || [];
   const memberNames = group.member_names || {};
-  const paidEmails = new Set(payments.filter(p => p.status === "paid").map(p => p.user_email));
+  const paymentPaidEmails = new Set(payments.filter(p => p.status === "paid").map(p => p.user_email));
+  // Organiser's own "paid" ticks, plus anyone with a recorded payment.
+  const markedPaid: string[] = (group as any).paid_emails || [];
+  const lastReminderAt: string | null = (group as any).last_reminder_at || null;
+  const isPaid = (email: string) => markedPaid.includes(email) || paymentPaidEmails.has(email);
+  const unpaidMembers = members.filter(e => e !== group.owner_email && !isPaid(e));
+  const organiserName = memberNames[group.owner_email] || group.owner_email.split("@")[0];
 
   const handleRemove = async (email: string) => {
     setRemoving(email);
     const updatedEmails = members.filter(e => e !== email);
     const updatedNames = { ...memberNames };
     delete updatedNames[email];
-    await supabase.from("groups").update({ member_emails: updatedEmails, member_names: updatedNames }).eq("id", group.id);
-    onGroupUpdate({ member_emails: updatedEmails, member_names: updatedNames });
+    const payload: any = { member_emails: updatedEmails, member_names: updatedNames };
+    if (markedPaid.includes(email)) payload.paid_emails = markedPaid.filter(e => e !== email);
+    await supabase.from("groups").update(payload).eq("id", group.id);
+    onGroupUpdate({ member_emails: updatedEmails, member_names: updatedNames, ...(payload.paid_emails ? { paid_emails: payload.paid_emails } : {}) } as any);
     setRemoving(null);
     setConfirmRemove(null);
   };
 
+  const togglePaid = async (email: string) => {
+    setTogglingPaid(email);
+    const next = markedPaid.includes(email) ? markedPaid.filter(e => e !== email) : [...markedPaid, email];
+    const { error } = await supabase.from("groups").update({ paid_emails: next } as any).eq("id", group.id);
+    if (error) {
+      toast.error("Couldn't update. Please try again.");
+    } else {
+      onGroupUpdate({ paid_emails: next } as any);
+    }
+    setTogglingPaid(null);
+  };
+
+  const openReminder = () => {
+    if (!reminderText) {
+      setReminderText(
+        `Hi! A quick reminder from ${organiserName} about ${group.name}: if your entry is still outstanding, please sort it with me before the competition starts. Thanks!`
+      );
+    }
+    setShowReminder(true);
+  };
+
+  const sendReminder = async () => {
+    setSending(true);
+    try {
+      const res = await fetch("/api/groups/remind", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupId: group.id, message: reminderText }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error || "Couldn't send the reminder. Please try again.");
+      } else {
+        toast.success(`Reminder sent to ${data.sent} player${data.sent !== 1 ? "s" : ""}.`);
+        onGroupUpdate({ last_reminder_at: new Date().toISOString() } as any);
+        setShowReminder(false);
+      }
+    } catch {
+      toast.error("Couldn't send the reminder. Please try again.");
+    }
+    setSending(false);
+  };
+
+  const lastReminderLabel = (() => {
+    if (!lastReminderAt) return null;
+    try { return format(new Date(lastReminderAt), "d MMM, HH:mm"); } catch { return null; }
+  })();
+
   return (
     <div className="space-y-4">
+      <div className="rounded-3xl border p-5 space-y-3" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+        <div className="flex items-center gap-2">
+          <Mail className="w-5 h-5 text-green-500" />
+          <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>Entry reminders</h2>
+        </div>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          Tick players as Paid when they&apos;ve paid you. A reminder email goes only to players who aren&apos;t ticked.
+        </p>
+        {!showReminder ? (
+          unpaidMembers.length === 0 ? (
+            <p className="text-sm font-semibold text-green-600">Everyone is marked as paid ✓</p>
+          ) : (
+            <button onClick={openReminder}
+              className="w-full h-12 rounded-2xl text-white text-sm font-bold transition-all active:scale-95"
+              style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
+              Send payment reminder ({unpaidMembers.length})
+            </button>
+          )
+        ) : (
+          <div className="space-y-3">
+            <textarea value={reminderText} onChange={e => setReminderText(e.target.value)} maxLength={1000} rows={5}
+              className="w-full rounded-xl border px-3 py-2 text-base"
+              style={{ borderColor: "var(--border)" }} />
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              {reminderText.length}/1000 · Goes to {unpaidMembers.length} player{unpaidMembers.length !== 1 ? "s" : ""}, each by their own email. Replies come to you.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={sendReminder} disabled={sending || !reminderText.trim()}
+                className="flex-1 h-12 rounded-2xl text-white text-sm font-bold disabled:opacity-50 transition-all active:scale-95"
+                style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
+                {sending ? "Sending..." : `Send to ${unpaidMembers.length} player${unpaidMembers.length !== 1 ? "s" : ""}`}
+              </button>
+              <button onClick={() => setShowReminder(false)} disabled={sending}
+                className="px-4 h-12 rounded-2xl border border-slate-200 text-sm font-semibold text-slate-600">Cancel</button>
+            </div>
+          </div>
+        )}
+        {lastReminderLabel && (
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>Last reminder sent {lastReminderLabel}. One reminder can be sent every 24 hours.</p>
+        )}
+      </div>
+
       <div className="rounded-3xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
         <div className="px-6 py-5 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
           <Users className="w-5 h-5 text-green-500" />
@@ -117,29 +219,29 @@ function GroupMembersTab({ group, payments, currentUserEmail, onGroupUpdate }: {
             {members.map(email => {
               const name = memberNames[email] || email.split("@")[0];
               const isOwner = email === group.owner_email;
-              const hasPaid = group.entry_fee_enabled ? paidEmails.has(email) : null;
+              const paid = isPaid(email);
               const isMe = email === currentUserEmail;
               return (
                 <div key={email} className="px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
                         <span className="text-sm font-bold text-slate-500">{name.charAt(0).toUpperCase()}</span>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <p className="text-base font-medium" style={{ color: "var(--text-primary)" }}>{name}</p>
                           {isOwner && <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">Owner</span>}
                           {isMe && !isOwner && <span className="text-xs text-green-500 font-semibold">(you)</span>}
-                          {hasPaid === true && <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">Paid</span>}
-                          {hasPaid === false && <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-50 text-red-500 font-semibold">Unpaid</span>}
+                          {!isOwner && paid && <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">Paid</span>}
+                          {!isOwner && !paid && <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-50 text-red-500 font-semibold">Unpaid</span>}
                         </div>
-                        <p className="text-sm text-slate-400">{email}</p>
+                        <p className="text-sm text-slate-400 truncate">{email}</p>
                       </div>
                     </div>
-                    {!isOwner && !isMe && (
+                    {!isOwner && (
                       confirmRemove === email ? (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-shrink-0">
                           <button onClick={() => handleRemove(email)} disabled={!!removing}
                             className="text-xs px-3 py-1.5 rounded-lg bg-red-500 text-white font-semibold">
                             {removing === email ? "..." : "Remove"}
@@ -147,9 +249,17 @@ function GroupMembersTab({ group, payments, currentUserEmail, onGroupUpdate }: {
                           <button onClick={() => setConfirmRemove(null)} className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500">Cancel</button>
                         </div>
                       ) : (
-                        <button onClick={() => setConfirmRemove(email)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-400 transition-colors">
-                          <UserMinus className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button onClick={() => togglePaid(email)} disabled={togglingPaid === email}
+                            className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 font-semibold whitespace-nowrap disabled:opacity-50">
+                            {togglingPaid === email ? "..." : paid && markedPaid.includes(email) ? "Unmark" : paid ? "Paid" : "Mark paid"}
+                          </button>
+                          {!isMe && (
+                            <button onClick={() => setConfirmRemove(email)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-300 hover:text-red-400 transition-colors">
+                              <UserMinus className="w-5 h-5" />
+                            </button>
+                          )}
+                        </div>
                       )
                     )}
                   </div>
@@ -372,7 +482,7 @@ export default function GroupDetailPage() {
       if (data.bypassed) {
         // Admin has switched payments off in /admin/settings — the player
         // limit was already raised server-side, no Stripe redirect needed.
-        toast.success("Payments are in test mode — player limit raised without charging.");
+        toast.success("Player limit raised.");
         setGroup({ ...group, max_players: data.targetTier });
         setUpgrading(false);
         return;
