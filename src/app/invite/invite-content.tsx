@@ -153,6 +153,19 @@ export default function InviteContent() {
           </div>
         )}
 
+        <div className="w-full rounded-2xl px-4 py-4"
+          style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
+          <p className="text-white/50 text-xs font-semibold uppercase tracking-wide mb-2">Entry &amp; payment</p>
+          <p className="text-white/80 text-sm leading-relaxed">
+            If the organiser has set an entry fee, you pay it directly to them. They&apos;ll tell you how.
+            Derby Day doesn&apos;t collect or handle entry fees or prizes. Entry arrangements are between
+            you and the organiser.
+          </p>
+          <p className="text-white/80 text-sm leading-relaxed mt-3">
+            Your progress will show on the Group Leaderboard.
+          </p>
+        </div>
+
         <button onClick={handleJoin}
           className="w-full h-16 rounded-2xl text-lg font-black text-white transition-transform active:scale-95 join-pulse">
           {loggedIn ? "🎯 Join This Competition" : "🎯 Create Free Account & Join"}
