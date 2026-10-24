@@ -5,6 +5,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 
+const URL_RE = /(https?:\/\/[^\s]+)/g;
+
 export default function InviteContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -17,6 +19,7 @@ export default function InviteContent() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -83,6 +86,20 @@ export default function InviteContent() {
   const deadlineFormatted = group?.start_deadline
     ? (() => { try { return format(new Date(group.start_deadline), "EEE d MMM, HH:mm"); } catch { return "Open"; } })()
     : "Open";
+
+  const organiserNote: string = group.leaderboard_note || "";
+  const noteLink = organiserNote.match(/https?:\/\/[^\s]+/)?.[0];
+
+  const copyNoteLink = async () => {
+    if (!noteLink) return;
+    try {
+      await navigator.clipboard.writeText(noteLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard blocked (some in-app browsers) — the link is still tappable.
+    }
+  };
 
   return (
     <div className="fixed inset-0 overflow-y-auto flex flex-col items-center"
@@ -161,6 +178,32 @@ export default function InviteContent() {
             Derby Day doesn&apos;t collect or handle entry fees or prizes. Entry arrangements are between
             you and the organiser.
           </p>
+
+          {organiserNote && (
+            <div className="mt-3 rounded-xl px-3 py-3"
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}>
+              <p className="text-white/50 text-xs font-semibold uppercase tracking-wide mb-1">Organiser&apos;s note</p>
+              <p className="text-white text-sm leading-relaxed break-words">
+                {organiserNote.split(URL_RE).map((part, i) =>
+                  /^https?:\/\//.test(part) ? (
+                    <a key={i} href={part} target="_blank" rel="noopener noreferrer nofollow"
+                      className="underline text-amber-300 break-all">
+                      {part}
+                    </a>
+                  ) : (
+                    <span key={i}>{part}</span>
+                  )
+                )}
+              </p>
+              {noteLink && (
+                <button onClick={copyNoteLink}
+                  className="mt-2 h-9 px-3 rounded-lg text-xs font-semibold text-white border border-white/30 active:scale-95">
+                  {copied ? "Copied ✓" : "Copy link"}
+                </button>
+              )}
+            </div>
+          )}
+
           <p className="text-white/80 text-sm leading-relaxed mt-3">
             Your progress will show on the Group Leaderboard.
           </p>
