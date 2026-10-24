@@ -4,9 +4,11 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
+const URL_RE = /(https?:\/\/[^\s]+)/g;
+
 // An optional line the organiser writes about their own group, shown under the
-// leaderboard title (e.g. "50% / 30% / 20% split"). It's the organiser's note,
-// not a Derby Day statement, and is labelled as such.
+// leaderboard title (e.g. "50% / 30% / 20% split" or a payment link). It's the
+// organiser's note, not a Derby Day statement, and is labelled as such.
 export function LeaderboardNote({ group, isOwner, onSaved }: {
   group: any;
   isOwner: boolean;
@@ -19,6 +21,18 @@ export function LeaderboardNote({ group, isOwner, onSaved }: {
   const [saving, setSaving] = useState(false);
 
   if (!note && !isOwner) return null;
+
+  const firstLink = note.match(/https?:\/\/[^\s]+/)?.[0];
+
+  const copyLink = async () => {
+    if (!firstLink) return;
+    try {
+      await navigator.clipboard.writeText(firstLink);
+      toast.success("Link copied.");
+    } catch {
+      toast.error("Couldn't copy. Press and hold the link to copy it.");
+    }
+  };
 
   const save = async () => {
     setSaving(true);
@@ -47,7 +61,7 @@ export function LeaderboardNote({ group, isOwner, onSaved }: {
           value={value}
           onChange={e => setValue(e.target.value)}
           maxLength={200}
-          placeholder="e.g. 50% / 30% / 20% split"
+          placeholder="e.g. 50% / 30% / 20% split. Pay: https://revolut.me/yourname"
           className="w-full h-11 rounded-xl border px-3 text-base"
           style={{ borderColor: "var(--border)" }}
         />
@@ -69,18 +83,36 @@ export function LeaderboardNote({ group, isOwner, onSaved }: {
   }
 
   return (
-    <div className="px-6 py-3 border-b flex items-center justify-between gap-3" style={{ borderColor: "var(--border)" }}>
-      {note ? (
-        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-          <span className="font-semibold">Organiser&apos;s note:</span> {note}
-        </p>
-      ) : (
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>No organiser&apos;s note yet.</p>
-      )}
-      {isOwner && (
-        <button onClick={() => { setValue(note); setEditing(true); }}
-          className="text-xs font-semibold text-amber-500 hover:text-amber-600 flex-shrink-0">
-          {note ? "Edit" : "Add"}
+    <div className="px-6 py-3 border-b space-y-2" style={{ borderColor: "var(--border)" }}>
+      <div className="flex items-start justify-between gap-3">
+        {note ? (
+          <p className="text-sm break-words min-w-0" style={{ color: "var(--text-secondary)" }}>
+            <span className="font-semibold">Organiser&apos;s note:</span>{" "}
+            {note.split(URL_RE).map((part, i) =>
+              /^https?:\/\//.test(part) ? (
+                <a key={i} href={part} target="_blank" rel="noopener noreferrer nofollow"
+                  className="underline text-amber-600 break-all">
+                  {part}
+                </a>
+              ) : (
+                <span key={i}>{part}</span>
+              )
+            )}
+          </p>
+        ) : (
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No organiser&apos;s note yet.</p>
+        )}
+        {isOwner && (
+          <button onClick={() => { setValue(note); setEditing(true); }}
+            className="text-xs font-semibold text-amber-500 hover:text-amber-600 flex-shrink-0">
+            {note ? "Edit" : "Add"}
+          </button>
+        )}
+      </div>
+      {firstLink && (
+        <button onClick={copyLink}
+          className="h-9 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700">
+          Copy link
         </button>
       )}
     </div>
