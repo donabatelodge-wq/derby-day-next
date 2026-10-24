@@ -14,6 +14,7 @@ import Link from "next/link";
 import type { Group, Meeting, Entry } from "@/lib/types";
 import { nextPackTier } from "@/lib/pricing";
 import { PL_TEAMS } from "@/lib/lms-teams";
+import { LeaderboardNote } from "@/components/group/leaderboard-note";
 
 const STATUS_CONFIG = {
   upcoming:    { label: "Upcoming",    Icon: Clock,        color: "text-blue-600",  bg: "bg-blue-50",  border: "border-blue-200"  },
@@ -861,6 +862,10 @@ export default function GroupDetailPage() {
                       {currentMeeting ? `${currentMeeting.name} Leaderboard` : "Overall Leaderboard"}
                     </h2>
                   </div>
+                                    {!currentMeeting && (
+                    <LeaderboardNote group={group} isOwner={isOwner}
+                      onSaved={note => setGroup(g => g ? ({ ...g, leaderboard_note: note } as any) : g)} />
+                  )}
                   {leaderboard.length === 0 ? (
                     <div className="px-6 py-10 text-center text-sm" style={{ color: "var(--text-muted)" }}>No entries yet.</div>
                   ) : (
