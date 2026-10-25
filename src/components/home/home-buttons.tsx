@@ -14,12 +14,12 @@ const DISCLAIMERS: Record<string, { icon: string; title: string; body: string }>
   horse_racing: {
     icon: "🏇",
     title: "Racing Competition",
-    body: `As Admin of your competition you must pay a small "Platform Management" fee for each player, you can add more players before the competition starts if you need more. Its up to you to collect from and pay out to your players. You decide their fee. Start by selecting all the Race Meetings you want to include. The races for those meetings will be open for horse selections the day before the Race Meeting. Your player points will be displayed on your Leaderboard as results come in. Send out invites to your group.`,
+    body: `As the organiser of your competition you pay a one-time platform fee for the size of player pack you choose, shown before you confirm. You can move up to a bigger pack later if you need more players. You agree your own entry arrangements with your players privately, and Derby Day doesn't collect or handle entry fees or prizes. Start by choosing a Racing Festival or the individual Race Meetings you want to include. The races for each meeting are opened for selections the day before the Race Meeting. Your players' points will be displayed on your Leaderboard as results come in. Then send out invites to your group.`,
   },
   last_man_standing: {
     icon: "⚽",
     title: "Football Competition",
-    body: `As Admin of your competition you must pay a small "Platform Management" fee for each player. You can add more players before a Deadline time and date that YOU set before the competition starts. Your players will need to make their Team Pick each week before the new Deadline that YOU set. If a player forgets to pick the Admin (You) Auto Assigns a team alphabetically using the button before results are input. You will need to put in the Win or Loss for each team via your competition Admin tab. Send out invites to your group.`,
+    body: `As Admin of your competition you pay a one-time platform fee for the size of player pack you choose. You can add more players before a Deadline time and date that YOU set before the competition starts. Your players will need to make their Team Pick each week before the new Deadline that YOU set. If a player forgets to pick the Admin (You) Auto Assigns a team alphabetically using the button before results are input. You will need to put in the Win or Loss for each team via your competition Admin tab. Send out invites to your group.`,
   },
 };
 
@@ -27,6 +27,12 @@ export function HomeButtons({ content, isAdmin, userEmail }: Props) {
   const router = useRouter();
   const [pendingType, setPendingType] = useState<"horse_racing" | "last_man_standing" | null>(null);
   const [agreed, setAgreed] = useState(false);
+  const signedIn = !!userEmail;
+
+  // Signed-out visitors create an account first, then land where they were heading.
+  const go = (path: string) => {
+    router.push(signedIn ? path : `/signup?next=${encodeURIComponent(path)}`);
+  };
 
   // Only show a button if explicitly enabled in content
   // Defaults: racing + join = on, everything else = off
@@ -54,7 +60,7 @@ export function HomeButtons({ content, isAdmin, userEmail }: Props) {
 
   const handleContinue = () => {
     if (!pendingType || !agreed) return;
-    router.push(`/group/new?type=${pendingType}`);
+    go(`/group/new?type=${pendingType}`);
     setPendingType(null);
   };
 
@@ -88,7 +94,7 @@ export function HomeButtons({ content, isAdmin, userEmail }: Props) {
         )}
 
         {show("show_race_sweep_button") && (
-          <button onClick={() => router.push("/race-sweep")}
+          <button onClick={() => go("/race-sweep")}
             className={`${tileClass} text-white`}
             style={{ background: "#f97316" }}>
             Do A Race Sweep 🐴
@@ -103,7 +109,7 @@ export function HomeButtons({ content, isAdmin, userEmail }: Props) {
           </button>
         )}
 
-        {show("show_lms_button") && (
+        {signedIn && show("show_lms_button") && (
           <button onClick={() => openDisclaimer("last_man_standing")}
             className={`${tileClass} text-white`}
             style={{ background: "#9333ea" }}>
@@ -112,7 +118,7 @@ export function HomeButtons({ content, isAdmin, userEmail }: Props) {
         )}
 
         {show("show_join_group_button", true) && (
-          <button onClick={() => router.push("/join")}
+          <button onClick={() => go("/join")}
             className={`${tileClass} text-white`}
             style={{ background: "#92400e" }}>
             <Users className="w-8 h-8" />
@@ -120,7 +126,7 @@ export function HomeButtons({ content, isAdmin, userEmail }: Props) {
           </button>
         )}
 
-        {show("show_nfl_button") && (
+        {signedIn && show("show_nfl_button") && (
           <button onClick={() => router.push("/group/new")}
             className={`${tileClass} text-white`}
             style={{ background: "#2563eb" }}>
@@ -128,7 +134,7 @@ export function HomeButtons({ content, isAdmin, userEmail }: Props) {
           </button>
         )}
 
-        {show("show_football_leagues_button") && (
+        {signedIn && show("show_football_leagues_button") && (
           <button className={`${tileClass} text-white`}
             style={{ background: "#6b7280" }}>
             {content?.button_football_label || "World Football Leagues"}
