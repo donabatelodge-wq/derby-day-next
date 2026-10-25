@@ -5,6 +5,7 @@ import { HomeButtons } from "@/components/home/home-buttons";
 import { AddToHomeScreenBanner } from "@/components/home/add-to-homescreen-banner";
 import { IosAddToHomeScreenOverlay } from "@/components/home/ios-add-to-homescreen-overlay";
 import { HowItWorksCard } from "@/components/home/how-it-works-card";
+import { UpcomingFestivalsCard, type FestivalItem } from "@/components/home/upcoming-festivals-card";
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -40,6 +41,42 @@ export default async function HomePage() {
   };
 
   const myGroups = groups ?? [];
+
+  // Published festivals that haven't started yet. Mirrors the create-group
+  // flow: only meetings that are still open count, and a festival drops off
+  // once its first meeting date has passed. Any failure just hides the card.
+  let festivals: FestivalItem[] = [];
+  if ((content as any).show_upcoming_festivals !== false) {
+    try {
+      const db: any = supabase;
+      const { data: fs } = await db.from("festivals").select("*").eq("published", true);
+      const ids = Array.from(new Set((fs ?? []).flatMap((f: any) => f.meeting_ids || []))) as string[];
+      if (ids.length > 0) {
+        const { data: ms } = await supabase
+          .from("meetings")
+          .select("id, name, date, venue, status")
+          .in("id", ids)
+          .not("status", "in", '("closed","completed")');
+        const meetingList = ms ?? [];
+        const today = new Date().toISOString().slice(0, 10);
+        festivals = (fs ?? [])
+          .map((f: any) => ({
+            id: f.id,
+            name: f.name,
+            description: f.description ?? null,
+            ms: (f.meeting_ids || [])
+              .map((id: string) => meetingList.find((m: any) => m.id === id))
+              .filter(Boolean)
+              .sort((a: any, b: any) => String(a.date).localeCompare(String(b.date))),
+          }))
+          .filter((f: FestivalItem) => f.ms.length > 0 && String(f.ms[0].date).slice(0, 10) >= today)
+          .sort((a: FestivalItem, b: FestivalItem) => String(a.ms[0].date).localeCompare(String(b.ms[0].date)))
+          .slice(0, 5);
+      }
+    } catch {
+      festivals = [];
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col pb-24" style={{ background: "var(--bg)" }}>
@@ -98,6 +135,8 @@ export default async function HomePage() {
           )}
 
           <HomeButtons content={content} isAdmin={isAdmin} userEmail={user.email ?? ""} />
+
+          <UpcomingFestivalsCard festivals={festivals} />
 
           {content.show_how_competition_works !== false && <HowItWorksCard />}
 
