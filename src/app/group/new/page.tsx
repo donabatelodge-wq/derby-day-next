@@ -131,8 +131,26 @@ function NewGroupPageInner() {
           .order("date"),
         db.from("festivals").select("*").eq("published", true).order("created_at"),
       ]).then(([m, f]: any[]) => {
-        setMeetings(m?.data ?? []);
-        setFestivals(f?.data ?? []);
+        const meetingRows = m?.data ?? [];
+        const festivalRows = f?.data ?? [];
+        setMeetings(meetingRows);
+        setFestivals(festivalRows);
+
+        // Arrived from the Welcome page strip (?festival=<id>): jump straight
+        // to that festival's meetings, pre-ticked.
+        const wanted = searchParams.get("festival");
+        if (wanted) {
+          const fest = festivalRows.find((x: any) => x.id === wanted);
+          if (fest) {
+            const picked = (fest.meeting_ids || []).filter((id: string) =>
+              meetingRows.some((mm: any) => mm.id === id));
+            if (picked.length > 0) {
+              setSelectedMeetingIds(picked);
+              setChosenFestivalName(fest.name);
+              setRacingMode("meetings");
+            }
+          }
+        }
         setLoadingMeetings(false);
       });
     }
