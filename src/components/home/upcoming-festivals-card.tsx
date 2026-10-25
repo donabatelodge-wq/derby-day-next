@@ -12,7 +12,7 @@ function shortDate(date: string) {
   try { return format(new Date(date), "EEE d MMM"); } catch { return date; }
 }
 
-export function UpcomingFestivalsCard({ festivals }: { festivals: FestivalItem[] }) {
+export function UpcomingFestivalsCard({ festivals, signedIn = true }: { festivals: FestivalItem[]; signedIn?: boolean }) {
   if (festivals.length === 0) return null;
 
   return (
@@ -29,8 +29,11 @@ export function UpcomingFestivalsCard({ festivals }: { festivals: FestivalItem[]
           const first = f.ms[0];
           const last = f.ms[f.ms.length - 1];
           const venues = Array.from(new Set(f.ms.map(m => m.venue).filter(Boolean)));
+          const target = `/group/new?type=horse_racing&festival=${f.id}`;
+          // Signed-out visitors create an account first, then land back here.
+          const href = signedIn ? target : `/signup?next=${encodeURIComponent(target)}`;
           return (
-            <Link key={f.id} href={`/group/new?type=horse_racing&festival=${f.id}`}
+            <Link key={f.id} href={href}
               className="block rounded-2xl px-4 py-4 border transition-transform active:scale-95"
               style={{ borderColor: "var(--border)" }}>
               <p className="font-bold text-base" style={{ color: "var(--text-primary)" }}>{f.name}</p>
@@ -44,7 +47,9 @@ export function UpcomingFestivalsCard({ festivals }: { festivals: FestivalItem[]
               {f.description && (
                 <p className="text-sm mt-2" style={{ color: "var(--text-secondary)" }}>{f.description}</p>
               )}
-              <p className="text-sm font-semibold text-amber-500 mt-3">Start a competition →</p>
+              <p className="text-sm font-semibold text-amber-500 mt-3">
+                {signedIn ? "Start a competition →" : "Create a free account to start →"}
+              </p>
             </Link>
           );
         })}
