@@ -11,6 +11,8 @@ export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
+  // null = not checked yet, so signed-in users see no change while it loads.
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
@@ -19,6 +21,7 @@ export function AppHeader() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
+      setSignedIn(!!user);
       if (!user) return;
       supabase.from("profiles").select("role").eq("id", user.id).single()
         .then(({ data }) => setIsAdmin(data?.role === "admin"));
@@ -76,37 +79,52 @@ export function AppHeader() {
           </button>
         )}
 
-        <div className="relative" ref={menuRef}>
-          <button onClick={() => setMenuOpen(o => !o)}
-            className="w-9 h-9 flex items-center justify-center rounded-xl transition-colors active:opacity-60"
-            style={{ background: "var(--bg-card)", border: "1.5px solid var(--border)", boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}>
-            {menuOpen
-              ? <X className="w-5 h-5" style={{ color: "var(--text-primary)" }} />
-              : <Menu className="w-5 h-5" style={{ color: "var(--text-primary)" }} />}
-          </button>
+        {signedIn === false ? (
+          <div className="flex items-center gap-2">
+            <button onClick={() => router.push("/login")}
+              className="h-9 px-3 text-sm font-semibold active:opacity-60"
+              style={{ color: "var(--text-secondary)" }}>
+              Sign in
+            </button>
+            <button onClick={() => router.push("/signup")}
+              className="h-9 px-4 rounded-xl text-sm font-bold text-white active:opacity-80"
+              style={{ background: "#22c55e" }}>
+              Sign up
+            </button>
+          </div>
+        ) : (
+          <div className="relative" ref={menuRef}>
+            <button onClick={() => setMenuOpen(o => !o)}
+              className="w-9 h-9 flex items-center justify-center rounded-xl transition-colors active:opacity-60"
+              style={{ background: "var(--bg-card)", border: "1.5px solid var(--border)", boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}>
+              {menuOpen
+                ? <X className="w-5 h-5" style={{ color: "var(--text-primary)" }} />
+                : <Menu className="w-5 h-5" style={{ color: "var(--text-primary)" }} />}
+            </button>
 
-          {menuOpen && (
-            <div className="absolute right-0 top-11 w-52 rounded-2xl shadow-xl border overflow-hidden z-[100]"
-              style={{ background: "#ffffff", borderColor: "#e2e8f0" }}>
-              <div className="py-1">
-                {menuItems.map(({ label, href, icon: Icon }) => (
-                  <button key={href} onClick={() => { router.push(href); setMenuOpen(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors text-left active:bg-slate-100">
-                    <Icon className="w-4 h-4 text-slate-400" />
-                    {label}
-                  </button>
-                ))}
-                <div className="border-t border-slate-100 mt-1 pt-1">
-                  <button onClick={() => { handleSignOut(); setMenuOpen(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors text-left active:bg-slate-100">
-                    <LogOut className="w-4 h-4 text-slate-400" />
-                    Sign out
-                  </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-11 w-52 rounded-2xl shadow-xl border overflow-hidden z-[100]"
+                style={{ background: "#ffffff", borderColor: "#e2e8f0" }}>
+                <div className="py-1">
+                  {menuItems.map(({ label, href, icon: Icon }) => (
+                    <button key={href} onClick={() => { router.push(href); setMenuOpen(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors text-left active:bg-slate-100">
+                      <Icon className="w-4 h-4 text-slate-400" />
+                      {label}
+                    </button>
+                  ))}
+                  <div className="border-t border-slate-100 mt-1 pt-1">
+                    <button onClick={() => { handleSignOut(); setMenuOpen(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors text-left active:bg-slate-100">
+                      <LogOut className="w-4 h-4 text-slate-400" />
+                      Sign out
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );
