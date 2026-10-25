@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { createServiceClient } from "@/lib/supabase/service";
 import Link from "next/link";
 import { HomeButtons } from "@/components/home/home-buttons";
 import { AddToHomeScreenBanner } from "@/components/home/add-to-homescreen-banner";
@@ -10,24 +10,31 @@ import { UpcomingFestivalsCard, type FestivalItem } from "@/components/home/upco
 export default async function HomePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/signup");
 
-  const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", user.id).single();
+  let isAdmin = false;
+  let myGroups: any[] = [];
 
-  const isAdmin = profile?.role === "admin";
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles").select("role").eq("id", user.id).single();
+    isAdmin = profile?.role === "admin";
 
-  const { data: groups } = await supabase
-    .from("groups")
-    .select("id, name, type, status, member_emails, owner_email")
-    .or(`owner_email.eq.${user.email},member_emails.cs.{${user.email}}`)
-    .neq("status", "archived")
-    .order("created_at", { ascending: false });
+    const { data: groups } = await supabase
+      .from("groups")
+      .select("id, name, type, status, member_emails, owner_email")
+      .or(`owner_email.eq.${user.email},member_emails.cs.{${user.email}}`)
+      .neq("status", "archived")
+      .order("created_at", { ascending: false });
+    myGroups = groups ?? [];
+  }
 
-  const { data: welcomeContent } = await supabase
-    .from("welcome_content").select("*").single();
+  // Public page content is read on the server with the service client so
+  // signed-out visitors see it too. Only non-sensitive fields reach the page.
+  const service = createServiceClient();
+  const { data: welcomeContent } = await service
+    .from("welcome_content").select("*").limit(1).maybeSingle();
 
-  const content = welcomeContent || {
+  const content: any = welcomeContent || {
     title: "Welcome to Derby Day",
     subtitle: "Your ultimate Horse Racing and Football experience",
     show_title: true,
@@ -40,24 +47,22 @@ export default async function HomePage() {
     button_join_group_label: "Join A Competition",
   };
 
-  const myGroups = groups ?? [];
-
   // Published festivals that haven't started yet. Mirrors the create-group
-  // flow: only meetings that are still open count, and a festival drops off
-  // once its first meeting date has passed. Any failure just hides the card.
+  // flow: only open meetings count, and a festival drops off once its first
+  // meeting date has passed. Any failure just hides the card.
   let festivals: FestivalItem[] = [];
-  if ((content as any).show_upcoming_festivals !== false) {
+  if (content.show_upcoming_festivals !== false) {
     try {
-      const db: any = supabase;
+      const db: any = service;
       const { data: fs } = await db.from("festivals").select("*").eq("published", true);
       const ids = Array.from(new Set((fs ?? []).flatMap((f: any) => f.meeting_ids || []))) as string[];
       if (ids.length > 0) {
-        const { data: ms } = await supabase
+        const { data: ms } = await db
           .from("meetings")
           .select("id, name, date, venue, status")
           .in("id", ids)
           .not("status", "in", '("closed","completed")');
-        const meetingList = ms ?? [];
+        const meetingList: any[] = ms ?? [];
         const today = new Date().toISOString().slice(0, 10);
         festivals = (fs ?? [])
           .map((f: any) => ({
@@ -83,8 +88,8 @@ export default async function HomePage() {
       <div className="flex-1 flex flex-col items-center px-5 py-6">
         <div className="w-full max-w-lg">
 
-          <AddToHomeScreenBanner />
-          <IosAddToHomeScreenOverlay />
+          {user && <AddToHomeScreenBanner />}
+          {user && <IosAddToHomeScreenOverlay />}
 
           {myGroups.length > 0 && (
             <div className="w-full mb-6">
@@ -134,9 +139,23 @@ export default async function HomePage() {
             </p>
           )}
 
-          <HomeButtons content={content} isAdmin={isAdmin} userEmail={user.email ?? ""} />
+          {!user && (
+            <div className="w-full mb-6 flex flex-col items-center gap-3">
+              <Link href="/signup"
+                className="w-full h-14 rounded-2xl text-white font-black text-base flex items-center justify-center transition-transform active:scale-95"
+                style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
+                Create Free Account
+              </Link>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                Already have an account?{" "}
+                <Link href="/login" className="font-bold underline text-green-600">Sign in</Link>
+              </p>
+            </div>
+          )}
 
-          <UpcomingFestivalsCard festivals={festivals} />
+          <HomeButtons content={content} isAdmin={isAdmin} userEmail={user?.email ?? ""} />
+
+          <UpcomingFestivalsCard festivals={festivals} signedIn={!!user} />
 
           {content.show_how_competition_works !== false && <HowItWorksCard />}
 
