@@ -9,10 +9,13 @@ export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
+  // null = not checked yet, so signed-in users see no change while it loads.
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
+      setSignedIn(!!user);
       if (!user) return;
       supabase.from("profiles").select("role").eq("id", user.id).single()
         .then(({ data }) => setIsAdmin(data?.role === "admin"));
@@ -20,7 +23,7 @@ export function BottomNav() {
   }, []);
 
   const hidden = ["/login", "/signup", "/invite"].some(p => pathname.startsWith(p));
-  if (hidden) return null;
+  if (hidden || signedIn === false) return null;
 
   const tabs = [
     { label: "Welcome", href: "/", icon: Home },
