@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ChevronRight, ChevronLeft, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import { PLAYER_PACKS, packForPlayers } from "@/lib/pricing";
 import type { League } from "@/lib/types";
 
@@ -26,6 +27,10 @@ const CURRENCIES = [
   { code: "usd", label: "USD $", symbol: "$" },
   { code: "aud", label: "AUD $", symbol: "$" },
 ];
+
+function shortDate(d: string) {
+  try { return format(new Date(d), "EEE d MMM"); } catch { return d; }
+}
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
@@ -78,6 +83,11 @@ function NewGroupPageInner() {
   const [meetings, setMeetings] = useState<any[]>([]);
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [selectedMeetingIds, setSelectedMeetingIds] = useState<string[]>([]);
+  // Published racing festivals (admin-curated bundles of meetings).
+  const [festivals, setFestivals] = useState<any[]>([]);
+  // "choose" = pick festival-or-meetings, "festivals" = festival list, "meetings" = meeting list.
+  const [racingMode, setRacingMode] = useState<"choose" | "festivals" | "meetings">("choose");
+  const [chosenFestivalName, setChosenFestivalName] = useState<string | null>(null);
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loadingLeagues, setLoadingLeagues] = useState(false);
   const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(null);
@@ -113,10 +123,18 @@ function NewGroupPageInner() {
   useEffect(() => {
     if (groupType === "horse_racing" && meetings.length === 0) {
       setLoadingMeetings(true);
-      supabase.from("meetings").select("*")
-        .not("status", "in", '("closed","completed")')
-        .order("date")
-        .then(({ data }) => { setMeetings(data ?? []); setLoadingMeetings(false); });
+      // "festivals" isn't in the generated types, so use an untyped client for it.
+      const db: any = supabase;
+      Promise.all([
+        supabase.from("meetings").select("*")
+          .not("status", "in", '("closed","completed")')
+          .order("date"),
+        db.from("festivals").select("*").eq("published", true).order("created_at"),
+      ]).then(([m, f]: any[]) => {
+        setMeetings(m?.data ?? []);
+        setFestivals(f?.data ?? []);
+        setLoadingMeetings(false);
+      });
     }
   }, [groupType]);
 
@@ -133,6 +151,32 @@ function NewGroupPageInner() {
     }
   }, [groupType]);
 
+  // Festivals creators can pick: published, with at least one still-open
+  // meeting, and not yet started (first meeting today or later).
+  const today = new Date().toISOString().slice(0, 10);
+  const availableFestivals = festivals
+    .map(f => {
+      const ms = (f.meeting_ids || [])
+        .map((id: string) => meetings.find(m => m.id === id))
+        .filter(Boolean)
+        .sort((a: any, b: any) => String(a.date).localeCompare(String(b.date)));
+      return { ...f, ms };
+    })
+    .filter(f => f.ms.length > 0 && String(f.ms[0].date).slice(0, 10) >= today)
+    .sort((a, b) => String(a.ms[0].date).localeCompare(String(b.ms[0].date)));
+
+  const goToChooser = () => {
+    setRacingMode("choose");
+    setSelectedMeetingIds([]);
+    setChosenFestivalName(null);
+  };
+
+  const chooseFestival = (f: any) => {
+    setSelectedMeetingIds(f.ms.map((m: any) => m.id));
+    setChosenFestivalName(f.name);
+    setRacingMode("meetings");
+  };
+
   const canGoNext = () => {
     if (step === 1) return !!groupType;
     if (step === 2) {
@@ -145,6 +189,10 @@ function NewGroupPageInner() {
   };
 
   const handleBack = () => {
+    if (step === 2 && groupType === "horse_racing" && availableFestivals.length > 0 && racingMode !== "choose") {
+      goToChooser();
+      return;
+    }
     if (step === 2 && skippedTypeStep) {
       router.back();
       return;
@@ -291,48 +339,107 @@ function NewGroupPageInner() {
           </div>
         )}
 
-        {/* Step 2a — Horse Racing meetings */}
+        {/* Step 2a — Horse Racing: festival or meetings */}
         {step === 2 && groupType === "horse_racing" && (
           <div>
-            <p className="text-slate-500 text-sm mb-4">Select the meeting(s) to include in this series.</p>
-            <div className="space-y-4">
-              {loadingMeetings ? (
-                <div className="flex items-center justify-center py-16">
-                  <div className="w-8 h-8 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : meetings.length === 0 ? (
-                <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
-                  <p className="text-slate-500 text-sm">No upcoming meetings available.</p>
-                  <p className="text-slate-400 text-xs mt-1">Ask an admin to add meetings first.</p>
-                </div>
-              ) : (
-                meetings.map(m => {
-                  const selected = selectedMeetingIds.includes(m.id);
-                  return (
-                    <button key={m.id} onClick={() => toggleMeeting(m.id)}
-                      className="w-full flex items-center gap-4 p-6 rounded-2xl border-2 text-left transition-all active:scale-95 shadow-sm"
-                      style={{
-                        borderColor: selected ? "#22c55e" : "transparent",
-                        background: selected ? "#f0fdf4" : "#ffffff"
-                      }}>
-                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${selected ? "bg-green-500 border-green-500" : "border-slate-300"}`}>
-                        {selected && <Check className="w-4.5 h-4.5 text-white" />}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-bold text-slate-900 text-lg">{m.name}</p>
-                        <p className="text-sm text-slate-400 mt-0.5">{m.venue} · {m.date}</p>
-                      </div>
-                    </button>
-                  );
-                })
-              )}
-              {selectedMeetingIds.length > 0 && (
-                <p className="text-xs font-semibold text-green-600 text-center">
-                  {selectedMeetingIds.length} meeting{selectedMeetingIds.length > 1 ? "s" : ""} selected
+            {loadingMeetings ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="w-8 h-8 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : racingMode === "choose" && availableFestivals.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-slate-500 text-sm mb-4">How would you like to set up your racing competition?</p>
+                <button onClick={() => setRacingMode("festivals")}
+                  className="w-full flex items-center gap-4 p-5 rounded-2xl bg-white border-2 border-transparent hover:border-amber-300 text-left transition-all active:scale-95 shadow-sm">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center text-3xl flex-shrink-0">🏆</div>
+                  <div className="flex-1">
+                    <p className="font-bold text-slate-900 text-base">Choose a Racing Festival</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Ready-made festivals with all their meetings included</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-300" />
+                </button>
+                <button onClick={() => { setChosenFestivalName(null); setRacingMode("meetings"); }}
+                  className="w-full flex items-center gap-4 p-5 rounded-2xl bg-white border-2 border-transparent hover:border-green-300 text-left transition-all active:scale-95 shadow-sm">
+                  <div className="w-14 h-14 rounded-2xl bg-green-100 flex items-center justify-center text-3xl flex-shrink-0">📅</div>
+                  <div className="flex-1">
+                    <p className="font-bold text-slate-900 text-base">Choose a Meeting or Meetings</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Pick individual race meetings yourself</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-300" />
+                </button>
+              </div>
+            ) : racingMode === "festivals" ? (
+              <div>
+                <p className="text-slate-500 text-sm mb-4">
+                  Pick a festival. Its meetings will be ticked for you, and you can still change them.
                 </p>
-              )}
-            </div>
-            <InlineContinueButton disabled={!canGoNext()} onClick={() => setStep(s => s + 1)} />
+                <div className="space-y-3">
+                  {availableFestivals.map(f => {
+                    const first = f.ms[0];
+                    const last = f.ms[f.ms.length - 1];
+                    const venues = Array.from(new Set(f.ms.map((m: any) => m.venue).filter(Boolean)));
+                    return (
+                      <button key={f.id} onClick={() => chooseFestival(f)}
+                        className="w-full p-5 rounded-2xl bg-white border-2 border-transparent hover:border-amber-300 text-left transition-all active:scale-95 shadow-sm">
+                        <p className="font-bold text-slate-900 text-lg">{f.name}</p>
+                        <p className="text-sm text-slate-500 mt-0.5">
+                          {first.id === last.id ? shortDate(first.date) : `${shortDate(first.date)} – ${shortDate(last.date)}`}
+                          {" · "}{f.ms.length} meeting{f.ms.length > 1 ? "s" : ""}
+                        </p>
+                        {venues.length > 0 && (
+                          <p className="text-xs text-slate-400 mt-0.5">{venues.join(" · ")}</p>
+                        )}
+                        {f.description && (
+                          <p className="text-sm text-slate-600 mt-2">{f.description}</p>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <p className="text-slate-500 text-sm mb-4">
+                  {chosenFestivalName
+                    ? `Meetings from ${chosenFestivalName} are ticked. You can add or remove any.`
+                    : "Select the meeting(s) to include in this series."}
+                </p>
+                <div className="space-y-4">
+                  {meetings.length === 0 ? (
+                    <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
+                      <p className="text-slate-500 text-sm">No upcoming meetings available.</p>
+                      <p className="text-slate-400 text-xs mt-1">Ask an admin to add meetings first.</p>
+                    </div>
+                  ) : (
+                    meetings.map(m => {
+                      const selected = selectedMeetingIds.includes(m.id);
+                      return (
+                        <button key={m.id} onClick={() => toggleMeeting(m.id)}
+                          className="w-full flex items-center gap-4 p-6 rounded-2xl border-2 text-left transition-all active:scale-95 shadow-sm"
+                          style={{
+                            borderColor: selected ? "#22c55e" : "transparent",
+                            background: selected ? "#f0fdf4" : "#ffffff"
+                          }}>
+                          <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${selected ? "bg-green-500 border-green-500" : "border-slate-300"}`}>
+                            {selected && <Check className="w-4.5 h-4.5 text-white" />}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-bold text-slate-900 text-lg">{m.name}</p>
+                            <p className="text-sm text-slate-400 mt-0.5">{m.venue} · {m.date}</p>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                  {selectedMeetingIds.length > 0 && (
+                    <p className="text-xs font-semibold text-green-600 text-center">
+                      {selectedMeetingIds.length} meeting{selectedMeetingIds.length > 1 ? "s" : ""} selected
+                    </p>
+                  )}
+                </div>
+                <InlineContinueButton disabled={!canGoNext()} onClick={() => setStep(s => s + 1)} />
+              </div>
+            )}
           </div>
         )}
 
