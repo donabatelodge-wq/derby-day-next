@@ -13,6 +13,7 @@ const DEFAULT_CONTENT = {
   show_subtitle: true,
 
   show_how_competition_works: true,
+  show_upcoming_festivals: true,
 
   show_info_button_1: false,
   info_button_1_label: "ℹ️ App Info",
@@ -176,6 +177,10 @@ export default function AdminWelcomeContent() {
         </div>
 
         <p className="text-xs font-semibold uppercase tracking-widest px-1" style={{ color: "var(--text-muted)" }}>Cards</p>
+
+        <ButtonSection title="Upcoming Racing Festivals" showKey="show_upcoming_festivals"
+          form={form} setForm={setForm}
+          staticNote="Shows published festivals (Admin → Meetings → Festivals) that haven't started. Hidden automatically when there are none." />
 
         <ButtonSection title="How A Racing Competition Works" showKey="show_how_competition_works"
           form={form} setForm={setForm}
