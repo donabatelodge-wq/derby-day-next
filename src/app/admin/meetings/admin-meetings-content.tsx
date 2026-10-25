@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Plus, Trash2, Calendar, Clock, Settings, Trophy, Pencil } from "lucide-react";
+import { Plus, Trash2, Calendar, Clock, Settings, Trophy, Pencil, Check } from "lucide-react";
 import Link from "next/link";
 
 const STATUS_CONFIG = {
@@ -21,6 +21,8 @@ const EMPTY_FORM = {
   best_chance_multiplier_1st: 2, best_chance_multiplier_2nd: 2, best_chance_multiplier_3rd: 2,
   close_at: "",
 };
+
+const EMPTY_FESTIVAL_FORM = { name: "", description: "", meeting_ids: [] as string[] };
 
 export default function AdminMeetingsContent() {
   const router = useRouter();
@@ -43,9 +45,21 @@ export default function AdminMeetingsContent() {
   const [lmsCompetitions, setLmsCompetitions] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("meetings");
 
+  // Festivals
+  const [festivals, setFestivals] = useState<any[]>([]);
+  const [showFestivalForm, setShowFestivalForm] = useState(false);
+  const [editingFestivalId, setEditingFestivalId] = useState<string | null>(null);
+  const [festivalForm, setFestivalForm] = useState(EMPTY_FESTIVAL_FORM);
+  const [savingFestival, setSavingFestival] = useState(false);
+  const [deletingFestival, setDeletingFestival] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     const { data } = await supabase.from("meetings").select("*").order("sort_order").order("date");
     setMeetings(data ?? []);
+    // "festivals" isn't in the generated types, so go through an untyped client.
+    const db: any = supabase;
+    const { data: f } = await db.from("festivals").select("*").order("created_at", { ascending: false });
+    setFestivals(f ?? []);
     setLoading(false);
   }, []);
 
@@ -148,6 +162,94 @@ export default function AdminMeetingsContent() {
     toast.success("Meeting deleted.");
   };
 
+  // ---------- Festivals ----------
+
+  const sortedMeetingsByDate = [...meetings].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
+  const festivalMeetings = (f: any) =>
+    (f.meeting_ids || [])
+      .map((id: string) => meetings.find(m => m.id === id))
+      .filter(Boolean)
+      .sort((a: any, b: any) => String(a.date).localeCompare(String(b.date)));
+
+  const shortDate = (d: string) => {
+    try { return format(new Date(d), "EEE d MMM yyyy"); } catch { return d; }
+  };
+
+  const openNewFestival = () => {
+    setEditingFestivalId(null);
+    setFestivalForm(EMPTY_FESTIVAL_FORM);
+    setShowFestivalForm(true);
+  };
+
+  const startEditFestival = (f: any) => {
+    setEditingFestivalId(f.id);
+    setFestivalForm({
+      name: f.name || "",
+      description: f.description || "",
+      meeting_ids: f.meeting_ids || [],
+    });
+    setShowFestivalForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const closeFestivalForm = () => {
+    setShowFestivalForm(false);
+    setEditingFestivalId(null);
+    setFestivalForm(EMPTY_FESTIVAL_FORM);
+  };
+
+  const toggleFestivalMeeting = (id: string) => {
+    setFestivalForm(f => ({
+      ...f,
+      meeting_ids: f.meeting_ids.includes(id) ? f.meeting_ids.filter(x => x !== id) : [...f.meeting_ids, id],
+    }));
+  };
+
+  const handleSaveFestival = async () => {
+    if (!festivalForm.name.trim()) { toast.error("Give the festival a name."); return; }
+    if (festivalForm.meeting_ids.length === 0) { toast.error("Tick at least one meeting."); return; }
+    setSavingFestival(true);
+    const db: any = supabase;
+    const payload = {
+      name: festivalForm.name.trim(),
+      description: festivalForm.description.trim() || null,
+      meeting_ids: festivalForm.meeting_ids,
+    };
+    const { error } = editingFestivalId
+      ? await db.from("festivals").update(payload).eq("id", editingFestivalId)
+      : await db.from("festivals").insert({ ...payload, published: false });
+    setSavingFestival(false);
+    if (error) { toast.error("Failed to save festival."); return; }
+    closeFestivalForm();
+    await load();
+    toast.success(editingFestivalId ? "Festival updated!" : "Festival saved as a draft. Press Publish when ready.");
+  };
+
+  const togglePublish = async (f: any) => {
+    const next = !f.published;
+    setFestivals(prev => prev.map(x => x.id === f.id ? { ...x, published: next } : x));
+    const db: any = supabase;
+    const { error } = await db.from("festivals").update({ published: next }).eq("id", f.id);
+    if (error) {
+      setFestivals(prev => prev.map(x => x.id === f.id ? { ...x, published: !next } : x));
+      toast.error("Couldn't change publish status.");
+      return;
+    }
+    toast.success(next ? "Festival published." : "Festival unpublished.");
+  };
+
+  const handleDeleteFestival = async (id: string) => {
+    if (!confirm("Delete this festival? Groups already created from it are not affected, and the meetings are not deleted.")) return;
+    setDeletingFestival(id);
+    const db: any = supabase;
+    const { error } = await db.from("festivals").delete().eq("id", id);
+    setDeletingFestival(null);
+    if (error) { toast.error("Failed to delete festival."); return; }
+    await load();
+    toast.success("Festival deleted.");
+  };
+
   if (loading || !isAdmin) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)" }}>
       <div className="w-8 h-8 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
@@ -156,6 +258,7 @@ export default function AdminMeetingsContent() {
 
   const tabs = [
     { id: "meetings", label: "Meetings" },
+    { id: "festivals", label: "Festivals" },
     { id: "lmsresults", label: "LMS Results" },
   ];
 
@@ -166,12 +269,20 @@ export default function AdminMeetingsContent() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "var(--text-muted)" }}>Admin</span>
-            <h1 className="text-2xl font-bold mt-0.5" style={{ color: "var(--text-primary)" }}>Meetings</h1>
+            <h1 className="text-2xl font-bold mt-0.5" style={{ color: "var(--text-primary)" }}>
+              {activeTab === "festivals" ? "Festivals" : "Meetings"}
+            </h1>
           </div>
           {activeTab === "meetings" && (
             <button onClick={() => setShowForm(!showForm)}
               className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold">
               <Plus className="w-4 h-4" /> New Meeting
+            </button>
+          )}
+          {activeTab === "festivals" && (
+            <button onClick={() => (showFestivalForm ? closeFestivalForm() : openNewFestival())}
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold">
+              <Plus className="w-4 h-4" /> New Festival
             </button>
           )}
         </div>
@@ -207,6 +318,132 @@ export default function AdminMeetingsContent() {
                   </Link>
                 </div>
               ))
+            )}
+          </div>
+        )}
+
+        {activeTab === "festivals" && (
+          <div>
+            {showFestivalForm && (
+              <div className="rounded-3xl p-5 border mb-5 space-y-4" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+                <h2 className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>
+                  {editingFestivalId ? "Edit Festival" : "New Festival"}
+                </h2>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Festival Name *</label>
+                  <input placeholder="e.g. Christmas Racing Festival" value={festivalForm.name}
+                    onChange={e => setFestivalForm(f => ({ ...f, name: e.target.value }))}
+                    className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Short description</label>
+                  <input placeholder="Optional, e.g. Leopardstown and Kempton over four days" value={festivalForm.description}
+                    onChange={e => setFestivalForm(f => ({ ...f, description: e.target.value }))}
+                    maxLength={200}
+                    className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-2 block" style={{ color: "var(--text-muted)" }}>
+                    Meetings in this festival * ({festivalForm.meeting_ids.length} ticked)
+                  </label>
+                  {sortedMeetingsByDate.length === 0 ? (
+                    <p className="text-sm" style={{ color: "var(--text-muted)" }}>Create some meetings first.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {sortedMeetingsByDate.map(m => {
+                        const ticked = festivalForm.meeting_ids.includes(m.id);
+                        return (
+                          <button key={m.id} type="button" onClick={() => toggleFestivalMeeting(m.id)}
+                            className="w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left"
+                            style={{ borderColor: ticked ? "#22c55e" : "var(--border)", background: ticked ? "#f0fdf4" : "transparent" }}>
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${ticked ? "bg-green-500 border-green-500" : "border-slate-300"}`}>
+                              {ticked && <Check className="w-4 h-4 text-white" />}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{m.name}</p>
+                              <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                                {m.venue ? `${m.venue} · ` : ""}{shortDate(m.date)}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  Saved as a draft. Creators only see it once you press Publish. Editing a festival later doesn&apos;t change groups that already used it.
+                </p>
+                <div className="flex gap-2">
+                  <button onClick={handleSaveFestival} disabled={savingFestival}
+                    className="flex-1 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold disabled:opacity-50">
+                    {savingFestival ? "Saving..." : editingFestivalId ? "Save Changes" : "Save Festival"}
+                  </button>
+                  <button onClick={closeFestivalForm}
+                    className="px-4 py-3.5 rounded-2xl border border-slate-200 text-sm text-slate-600">Cancel</button>
+                </div>
+              </div>
+            )}
+
+            {festivals.length === 0 ? (
+              <div className="text-center py-16" style={{ color: "var(--text-muted)" }}>
+                <Calendar className="w-8 h-8 mx-auto mb-3 opacity-40" />
+                <p>No festivals yet. Create one above.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {festivals.map(f => {
+                  const ms = festivalMeetings(f);
+                  const first = ms[0];
+                  const last = ms[ms.length - 1];
+                  const venues = Array.from(new Set(ms.map((m: any) => m.venue).filter(Boolean)));
+                  return (
+                    <div key={f.id} className="rounded-3xl p-5 border" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${f.published ? "text-emerald-600 bg-emerald-50 border-emerald-200" : "text-slate-500 bg-slate-50 border-slate-200"}`}>
+                            {f.published ? "Published" : "Draft"}
+                          </span>
+                          <h2 className="font-semibold mt-2" style={{ color: "var(--text-primary)" }}>{f.name}</h2>
+                          {f.description && (
+                            <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>{f.description}</p>
+                          )}
+                          {first && (
+                            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                              {first.id === last.id ? shortDate(first.date) : `${shortDate(first.date)} – ${shortDate(last.date)}`}
+                              {venues.length > 0 && ` · ${venues.join(", ")}`}
+                            </p>
+                          )}
+                          <div className="mt-2 text-xs space-y-0.5" style={{ color: "var(--text-muted)" }}>
+                            {ms.map((m: any) => (
+                              <p key={m.id} className="truncate">{shortDate(m.date)} · {m.name}</p>
+                            ))}
+                            {ms.length === 0 && <p>No meetings found. Edit this festival.</p>}
+                          </div>
+                          <div className="flex gap-4 pt-3">
+                            <button onClick={() => togglePublish(f)}
+                              className={`text-xs font-semibold ${f.published ? "text-slate-500" : "text-emerald-600"}`}>
+                              {f.published ? "Unpublish" : "Publish"}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex gap-1.5 flex-shrink-0">
+                          <button onClick={() => startEditFestival(f)}
+                            className="w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 hover:border-slate-300 transition-colors">
+                            <Pencil className="w-4 h-4 text-slate-400" />
+                          </button>
+                          <button onClick={() => handleDeleteFestival(f.id)} disabled={deletingFestival === f.id}
+                            className="w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 text-slate-300 hover:text-red-400 hover:border-red-200 transition-colors">
+                            {deletingFestival === f.id
+                              ? <div className="w-4 h-4 border-2 border-red-300 border-t-transparent rounded-full animate-spin" />
+                              : <Trash2 className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
