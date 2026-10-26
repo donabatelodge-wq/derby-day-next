@@ -117,6 +117,11 @@ export default async function HomePage() {
                           <p className="text-xs mt-0.5" style={{ color: isFirst ? "rgba(255,255,255,0.6)" : "var(--text-muted)" }}>
                             {(g.member_emails || []).length} players{isFirst ? " · Active now" : ""}
                           </p>
+                          {g.type !== "last_man_standing" && (
+                            <p className="text-xs mt-1" style={{ color: isFirst ? "rgba(255,255,255,0.6)" : "var(--text-muted)" }}>
+                              Selections available the day before racing starts
+                            </p>
+                          )}
                         </div>
                         <span style={{ color: isFirst ? "#f59e0b" : "var(--text-muted)" }}>→</span>
                       </div>
