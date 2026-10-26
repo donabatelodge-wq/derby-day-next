@@ -15,6 +15,7 @@ import type { Group, Meeting, Entry } from "@/lib/types";
 import { nextPackTier } from "@/lib/pricing";
 import { PL_TEAMS } from "@/lib/lms-teams";
 import { LeaderboardNote } from "@/components/group/leaderboard-note";
+import { PickReminders } from "@/components/group/pick-reminders";
 
 const STATUS_CONFIG = {
   upcoming:    { label: "Upcoming",    Icon: Clock,        color: "text-blue-600",  bg: "bg-blue-50",  border: "border-blue-200"  },
@@ -83,8 +84,10 @@ function DeleteGroupModal({ group, status, onConfirmDelete, onConfirmArchive, on
   );
 }
 
-function GroupMembersTab({ group, payments, currentUserEmail, onGroupUpdate }: {
-  group: Group; payments: any[]; currentUserEmail: string | null; onGroupUpdate: (u: Partial<Group>) => void;
+function GroupMembersTab({ group, payments, currentUserEmail, meetings, raceCounts, entries, onGroupUpdate }: {
+  group: Group; payments: any[]; currentUserEmail: string | null;
+  meetings: Meeting[]; raceCounts: Record<string, number>; entries: Entry[];
+  onGroupUpdate: (u: Partial<Group>) => void;
 }) {
   const [removing, setRemoving] = useState<string|null>(null);
   const [confirmRemove, setConfirmRemove] = useState<string|null>(null);
@@ -207,6 +210,10 @@ function GroupMembersTab({ group, payments, currentUserEmail, onGroupUpdate }: {
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>Last reminder sent {lastReminderLabel}. One reminder can be sent every 24 hours.</p>
         )}
       </div>
+
+      {group.type === "horse_racing" && (
+        <PickReminders group={group} meetings={meetings} raceCounts={raceCounts} entries={entries} onGroupUpdate={onGroupUpdate} />
+      )}
 
       <div className="rounded-3xl border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
         <div className="px-6 py-5 border-b flex items-center gap-2" style={{ borderColor: "var(--border)" }}>
@@ -862,7 +869,7 @@ export default function GroupDetailPage() {
                       {currentMeeting ? `${currentMeeting.name} Leaderboard` : "Overall Leaderboard"}
                     </h2>
                   </div>
-                                    {!currentMeeting && (
+                  {!currentMeeting && (
                     <LeaderboardNote group={group} isOwner={isOwner}
                       onSaved={note => setGroup(g => g ? ({ ...g, leaderboard_note: note } as any) : g)} />
                   )}
@@ -1021,7 +1028,9 @@ export default function GroupDetailPage() {
         )}
 
         {activeTab === "members" && isOwner && (
-          <GroupMembersTab group={group} payments={payments} currentUserEmail={currentUserEmail} onGroupUpdate={u => setGroup(g => g ? { ...g, ...u } : g)} />
+          <GroupMembersTab group={group} payments={payments} currentUserEmail={currentUserEmail}
+            meetings={meetings} raceCounts={raceCounts} entries={entries}
+            onGroupUpdate={u => setGroup(g => g ? { ...g, ...u } : g)} />
         )}
 
         {activeTab === "mypicks" && (
