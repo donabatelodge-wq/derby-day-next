@@ -16,6 +16,7 @@ import { nextPackTier } from "@/lib/pricing";
 import { PL_TEAMS } from "@/lib/lms-teams";
 import { LeaderboardNote } from "@/components/group/leaderboard-note";
 import { PickReminders } from "@/components/group/pick-reminders";
+import { RemovedPlayers } from "@/components/group/removed-players";
 
 const STATUS_CONFIG = {
   upcoming:    { label: "Upcoming",    Icon: Clock,        color: "text-blue-600",  bg: "bg-blue-50",  border: "border-blue-200"  },
@@ -110,11 +111,28 @@ function GroupMembersTab({ group, payments, currentUserEmail, meetings, raceCoun
     setRemoving(email);
     const updatedEmails = members.filter(e => e !== email);
     const updatedNames = { ...memberNames };
+    const removedName = updatedNames[email] || email.split("@")[0];
     delete updatedNames[email];
-    const payload: any = { member_emails: updatedEmails, member_names: updatedNames };
+    // Remember who was removed (and their name) so they can be reinstated,
+    // and so they can't simply rejoin with the invite code and PIN.
+    const removedMembers = {
+      ...((group as any).removed_members || {}),
+      [email]: { name: removedName, removed_at: new Date().toISOString() },
+    };
+    const payload: any = { member_emails: updatedEmails, member_names: updatedNames, removed_members: removedMembers };
     if (markedPaid.includes(email)) payload.paid_emails = markedPaid.filter(e => e !== email);
-    await supabase.from("groups").update(payload).eq("id", group.id);
-    onGroupUpdate({ member_emails: updatedEmails, member_names: updatedNames, ...(payload.paid_emails ? { paid_emails: payload.paid_emails } : {}) } as any);
+    const { error } = await supabase.from("groups").update(payload).eq("id", group.id);
+    if (error) {
+      toast.error("Couldn't remove the player. Please try again.");
+      setRemoving(null);
+      return;
+    }
+    onGroupUpdate({
+      member_emails: updatedEmails,
+      member_names: updatedNames,
+      removed_members: removedMembers,
+      ...(payload.paid_emails ? { paid_emails: payload.paid_emails } : {}),
+    } as any);
     setRemoving(null);
     setConfirmRemove(null);
   };
@@ -277,6 +295,8 @@ function GroupMembersTab({ group, payments, currentUserEmail, meetings, raceCoun
           </div>
         )}
       </div>
+
+      <RemovedPlayers group={group} onGroupUpdate={onGroupUpdate} />
     </div>
   );
 }
