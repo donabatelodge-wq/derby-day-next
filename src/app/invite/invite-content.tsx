@@ -89,6 +89,7 @@ export default function InviteContent() {
 
   const organiserNote: string = group.leaderboard_note || "";
   const noteLink = organiserNote.match(/https?:\/\/[^\s]+/)?.[0];
+  const entriesClosed = group.entries_closed === true;
 
   const copyNoteLink = async () => {
     if (!noteLink) return;
@@ -209,10 +210,20 @@ export default function InviteContent() {
           </p>
         </div>
 
-        <button onClick={handleJoin}
-          className="w-full h-16 rounded-2xl text-lg font-black text-white transition-transform active:scale-95 join-pulse">
-          {loggedIn ? "🎯 Join This Competition" : "🎯 Create Free Account & Join"}
-        </button>
+        {entriesClosed ? (
+          <div className="w-full rounded-2xl px-4 py-5 text-center"
+            style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.35)" }}>
+            <p className="text-white font-bold text-base">Entries closed</p>
+            <p className="text-white/70 text-sm mt-1">
+              This competition has started, so no more players can join.
+            </p>
+          </div>
+        ) : (
+          <button onClick={handleJoin}
+            className="w-full h-16 rounded-2xl text-lg font-black text-white transition-transform active:scale-95 join-pulse">
+            {loggedIn ? "🎯 Join This Competition" : "🎯 Create Free Account & Join"}
+          </button>
+        )}
 
         {!loggedIn && (
           <p className="text-white/60 text-sm">
