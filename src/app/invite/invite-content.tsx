@@ -36,6 +36,8 @@ export default function InviteContent() {
       if (!groups || groups.length === 0) { setNotFound(true); setLoading(false); return; }
 
       const g = groups[0];
+      const { data: closed } = await supabase.rpc("group_entries_closed", { p_invite_code: code });
+      g.entries_closed = closed === true;
       setGroup(g);
 
       if ((g.meeting_ids || []).length > 0) {
