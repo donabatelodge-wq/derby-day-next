@@ -432,6 +432,15 @@ export default function GroupDetailPage() {
   const availableMeetings = allMeetings.filter(m => !(group.meeting_ids || []).includes(m.id));
   const firstLmsComp = lmsCompetitions[0] || null;
 
+  // Equal points share a rank (1, 1, 3). The platform never picks between tied players.
+  const ranks: number[] = [];
+  leaderboard.forEach((row, i) => {
+    ranks.push(i > 0 && row.total === leaderboard[i - 1].total ? ranks[i - 1] : i + 1);
+  });
+  const nameFor = (email: string, participantName?: string | null) =>
+    (group.member_names || {})[email] || participantName || email.split("@")[0];
+  const winners = leaderboard.filter((_, i) => ranks[i] === 1);
+
   const formatAmount = (cents: number, currency: string) =>
     new Intl.NumberFormat("en-IE", { style: "currency", currency: (currency || "eur").toUpperCase() }).format(cents / 100);
 
@@ -439,7 +448,7 @@ export default function GroupDetailPage() {
     const meetingName = currentMeeting ? currentMeeting.name : group.name;
     const medals = ["🥇", "🥈", "🥉"];
     const lines = leaderboard.map((entry, i) => {
-      const medal = medals[i] || `${i + 1}.`;
+    const medal = medals[ranks[i] - 1] || `${ranks[i]}.`;
       const name = entry.participantName || entry.email.split("@")[0];
       return `${medal} ${name} — ${entry.total}pts`;
     });
@@ -829,7 +838,9 @@ export default function GroupDetailPage() {
                     <span className="text-4xl flex-shrink-0">🏆</span>
                     <div className="flex-1">
                       <p className="font-bold text-amber-800 text-lg">
-                        {(group.member_names || {})[leaderboard[0].email] || leaderboard[0].participantName || leaderboard[0].email.split("@")[0]} wins with {leaderboard[0].total} points!
+                        {winners.length > 1
+                          ? `Joint winners: ${winners.map(w => nameFor(w.email, w.participantName)).join(" & ")} with ${leaderboard[0].total} points!`
+                          : `${nameFor(leaderboard[0].email, leaderboard[0].participantName)} wins with ${leaderboard[0].total} points!`}
                       </p>
                       <p className="text-sm text-amber-600 mt-0.5">Competition complete</p>
                     </div>
@@ -901,9 +912,9 @@ export default function GroupDetailPage() {
                         <div key={row.email} className={`flex items-center justify-between px-6 py-4 ${row.email === currentUserEmail ? "bg-green-50" : ""}`}>
                           <div className="flex items-center gap-3">
                             <span className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0
-  ${i === 0 ? "bg-amber-400 text-white" : i === 1 ? "bg-slate-300 text-white" : i === 2 ? "bg-orange-300 text-white" : "bg-slate-100 text-slate-400"}`}>
-  {i + 1}
-</span>
+                    ${ranks[i] === 1 ? "bg-amber-400 text-white" : ranks[i] === 2 ? "bg-slate-300 text-white" : ranks[i] === 3 ? "bg-orange-300 text-white" : "bg-slate-100 text-slate-400"}`}>
+                   {ranks[i]}
+                  </span>
                             <span className="text-base font-medium" style={{ color: "var(--text-primary)" }}>
                               {(isMember || isOwner || isAdmin) ? ((group.member_names || {})[row.email] || row.participantName || row.email.split("@")[0]) : `Player ${i + 1}`}
                               {row.email === currentUserEmail && <span className="ml-1 text-xs text-green-500 font-semibold">(you)</span>}
