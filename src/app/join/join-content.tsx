@@ -64,8 +64,15 @@ export default function JoinContent() {
 
   useEffect(() => {
     if (joinCode.length >= 5) {
-      supabase.rpc("preview_group_by_invite_code", { p_invite_code: joinCode })
-        .then(({ data }) => setPreviewGroup(data?.[0] ?? null));
+       supabase.rpc("preview_group_by_invite_code", { p_invite_code: joinCode })
+        .then(async ({ data }) => {
+          const g = data?.[0] ?? null;
+          if (g) {
+            const { data: closed } = await supabase.rpc("group_entries_closed", { p_invite_code: joinCode });
+            g.entries_closed = closed === true;
+          }
+          setPreviewGroup(g);
+        });
     } else {
       setPreviewGroup(null);
     }
@@ -76,9 +83,10 @@ export default function JoinContent() {
     setJoining(true);
     setJoinError("");
 
-    // join_group() validates the PIN and capacity server-side and only ever
-    // touches member_emails/member_names — nothing about the group can be
-    // read or altered beyond that through this call.
+    // join_group() validates the PIN, capacity, removed players and the
+    // first-race cutoff server-side and only ever touches
+    // member_emails/member_names — nothing about the group can be read or
+    // altered beyond that through this call.
     const { data, error } = await supabase.rpc("join_group", {
       p_invite_code: joinCode.trim(),
       p_pin: joinPin.trim(),
@@ -136,6 +144,11 @@ export default function JoinContent() {
                 </p>
               </div>
             </div>
+            {previewGroup.entries_closed && (
+              <p className="mt-3 text-sm font-semibold text-red-700">
+                Entries closed. This competition has started, so new players can&apos;t join.
+              </p>
+            )}
           </div>
         )}
 
