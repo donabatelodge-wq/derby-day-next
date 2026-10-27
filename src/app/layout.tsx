@@ -5,6 +5,7 @@ import { AppHeader } from "@/components/layout/app-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { InstallPromptListener } from "@/components/pwa/install-prompt-listener";
 import { AddToHomeScreenPrompt } from "@/components/pwa/add-to-homescreen-prompt";
+import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 import "./globals.css";
 
 const geist = Geist({
@@ -48,6 +49,7 @@ export default function RootLayout({
     <html lang="en" className={`${geist.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col overscroll-none">
         <InstallPromptListener />
+        <ServiceWorkerRegister />
         <AppHeader />
         <main className="flex-1" style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom))" }}>
           {children}
