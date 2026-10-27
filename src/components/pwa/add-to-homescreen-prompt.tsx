@@ -1,55 +1,40 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Share, X, MoreVertical } from "lucide-react";
+import { X } from "lucide-react";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import {
   getDeferredInstallPrompt,
   clearDeferredInstallPrompt,
   subscribeInstallPromptAvailable,
 } from "@/lib/install-prompt";
+import { detectInstallEnv, stepKindFor, type InstallEnv } from "@/lib/install-env";
+import { InstallSteps } from "@/components/pwa/install-steps";
 
 const DISMISSED_KEY = "derbyday_a2hs_dismissed_at";
 const INSTALLED_KEY = "derbyday_a2hs_installed";
-const REASK_AFTER_MS = 30 * 24 * 60 * 60 * 1000; // ask again after a month
-const HIDDEN_PATHS = ["/login", "/signup", "/auth"];
-
-function Step({ n, children }: { n: number; children: React.ReactNode }) {
-  return (
-    <li className="flex items-start gap-3">
-      <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-        {n}
-      </span>
-      <span className="text-sm text-slate-700 leading-snug">{children}</span>
-    </li>
-  );
-}
+const REASK_AFTER_MS = 14 * 24 * 60 * 60 * 1000; // ask again after two weeks
+const HIDDEN_PATHS = ["/login", "/signup", "/auth", "/install"];
 
 // Offers "Add to Home Screen" to signed-in people who have joined (or created)
 // at least one group. Lives in the root layout, so it works on whatever page they
 // land on — including the group page they arrive at from an invite link.
 export function AddToHomeScreenPrompt() {
   const pathname = usePathname();
-  const [platform, setPlatform] = useState<"ios" | "android" | null>(null);
-  const [inAppBrowser, setInAppBrowser] = useState(false);
+  const [env, setEnv] = useState<InstallEnv | null>(null);
   const [canInstall, setCanInstall] = useState(false);
   const [dismissed, setDismissed] = useState(true); // hidden until we've checked storage
   const [eligible, setEligible] = useState(false);
   const checked = useRef(false);
 
-  // One-time setup: platform, already-installed, previously dismissed.
+  // One-time setup: phone/browser, already-installed, previously dismissed.
   useEffect(() => {
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone === true;
-    if (isStandalone) return; // already running as an installed app
-
-    const ua = window.navigator.userAgent.toLowerCase();
-    if (/iphone|ipad|ipod/.test(ua)) setPlatform("ios");
-    else if (/android/.test(ua)) setPlatform("android");
-    // Facebook / Instagram / Gmail-style in-app browsers can't add to home screen.
-    setInAppBrowser(/fban|fbav|instagram|line\/|gsa\/|twitter|linkedinapp/.test(ua));
+    const e = detectInstallEnv();
+    if (e.standalone || e.os === "desktop") return; // already installed, or not a phone
+    setEnv(e);
 
     try {
       const installed = localStorage.getItem(INSTALLED_KEY) === "true";
@@ -77,7 +62,7 @@ export function AddToHomeScreenPrompt() {
 
   // On each page change: are they signed in AND in at least one group?
   useEffect(() => {
-    if (!platform || dismissed || checked.current) return;
+    if (!env || dismissed || checked.current) return;
     if (HIDDEN_PATHS.some(p => pathname.startsWith(p))) return;
 
     let cancelled = false;
@@ -105,7 +90,7 @@ export function AddToHomeScreenPrompt() {
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [pathname, platform, dismissed]);
+  }, [pathname, env, dismissed]);
 
   const dismiss = () => {
     try { localStorage.setItem(DISMISSED_KEY, String(Date.now())); } catch {}
@@ -130,13 +115,25 @@ export function AddToHomeScreenPrompt() {
     setDismissed(true);
   };
 
-  if (!platform || dismissed || !eligible) return null;
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success("Link copied. Paste it into your browser.");
+    } catch {
+      toast.error("Couldn't copy. Please use the menu to open this page in your browser.");
+    }
+  };
+
+  if (!env || dismissed || !eligible) return null;
   if (HIDDEN_PATHS.some(p => pathname.startsWith(p))) return null;
+
+  const kind = stepKindFor(env);
+  const oneTap = env.os === "android" && canInstall && !env.inApp;
 
   return (
     <div className="fixed left-0 right-0 z-[60] flex justify-center px-4 pointer-events-none"
       style={{ bottom: "calc(5rem + env(safe-area-inset-bottom))" }}>
-      <div className="pointer-events-auto w-full max-w-md rounded-2xl p-5 shadow-2xl bg-white border border-slate-200">
+      <div className="pointer-events-auto w-full max-w-md rounded-2xl p-5 shadow-2xl bg-white border border-slate-200 max-h-[70vh] overflow-y-auto">
         <div className="flex items-start gap-3">
           <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
             style={{ background: "rgba(34,197,94,0.12)" }}>
@@ -151,64 +148,43 @@ export function AddToHomeScreenPrompt() {
           </button>
         </div>
 
-        {platform === "ios" && (
-          <ol className="space-y-2.5 mt-4">
-            <Step n={1}>
-              {inAppBrowser
-                ? <>Open this page in <span className="font-semibold">Safari</span> (use the ⋯ menu → Open in Safari).</>
-                : <>Open Derby Day in <span className="font-semibold">Safari</span>.</>}
-            </Step>
-            <Step n={2}>
-              Tap the <span className="font-semibold">Share</span> button{" "}
-              <Share className="w-4 h-4 inline -mt-0.5" /> at the bottom or top of the screen.
-            </Step>
-            <Step n={3}>
-              Scroll down and tap <span className="font-semibold">Add to Home Screen</span>.
-            </Step>
-            <Step n={4}>
-              Tap <span className="font-semibold">Add</span> in the top right corner.
-            </Step>
-          </ol>
-        )}
-
-        {platform === "android" && (
-          <>
-            {canInstall ? (
-              <button onClick={handleAdd}
-                className="w-full h-12 mt-4 rounded-xl text-white font-bold text-base active:scale-95 transition-transform"
-                style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
-                Add to Home Screen
+        <div className="mt-4">
+          {env.inApp ? (
+            <div>
+              <p className="text-sm text-slate-700 leading-snug">
+                This built-in browser can&apos;t add apps to your home screen. Tap the menu{" "}
+                ({env.os === "ios" ? "⋯" : "⋮"}) and choose{" "}
+                <span className="font-semibold">{env.os === "ios" ? "Open in Safari" : "Open in Chrome"}</span>,
+                then try again.
+              </p>
+              <button onClick={copyLink}
+                className="mt-3 h-10 px-4 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 active:scale-95">
+                Copy link
               </button>
-            ) : (
-              <ol className="space-y-2.5 mt-4">
-                <Step n={1}>
-                  {inAppBrowser
-                    ? <>Open this page in <span className="font-semibold">Chrome</span> (use the ⋮ menu → Open in Chrome).</>
-                    : <>Open Derby Day in <span className="font-semibold">Chrome</span>.</>}
-                </Step>
-                <Step n={2}>
-                  Tap the three dots <MoreVertical className="w-4 h-4 inline -mt-0.5" /> at the top right.
-                </Step>
-                <Step n={3}>
-                  Tap <span className="font-semibold">Install app</span> or{" "}
-                  <span className="font-semibold">Add to Home screen</span>.
-                </Step>
-                <Step n={4}>
-                  Tap <span className="font-semibold">Add</span> or <span className="font-semibold">Install</span>.
-                </Step>
-              </ol>
-            )}
-          </>
-        )}
+            </div>
+          ) : oneTap ? (
+            <button onClick={handleAdd}
+              className="w-full h-12 rounded-xl text-white font-bold text-base active:scale-95 transition-transform"
+              style={{ background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)" }}>
+              Add to Home Screen
+            </button>
+          ) : (
+            kind && <InstallSteps kind={kind} />
+          )}
+        </div>
 
         <p className="text-xs text-slate-500 mt-4 leading-relaxed">
           Open Derby Day from your home screen and sign in once. After that you&apos;ll stay signed in.
         </p>
 
-        <button onClick={dismiss}
-          className="mt-3 h-9 px-1 text-slate-500 font-semibold text-sm">
-          {canInstall && platform === "android" ? "Not now" : "Got it"}
-        </button>
+        <div className="mt-3 flex items-center justify-between">
+          <button onClick={dismiss} className="h-9 px-1 text-slate-500 font-semibold text-sm">
+            {oneTap ? "Not now" : "Got it"}
+          </button>
+          <Link href="/install" onClick={dismiss} className="text-xs font-semibold text-green-700 underline">
+            Full step-by-step guide
+          </Link>
+        </div>
       </div>
     </div>
   );
