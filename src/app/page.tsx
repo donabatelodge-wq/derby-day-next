@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import Link from "next/link";
 import { HomeButtons } from "@/components/home/home-buttons";
-import { AddToHomeScreenBanner } from "@/components/home/add-to-homescreen-banner";
 import { IosAddToHomeScreenOverlay } from "@/components/home/ios-add-to-homescreen-overlay";
 import { HowItWorksCard } from "@/components/home/how-it-works-card";
 import { UpcomingFestivalsCard, type FestivalItem } from "@/components/home/upcoming-festivals-card";
@@ -88,7 +87,6 @@ export default async function HomePage() {
       <div className="flex-1 flex flex-col items-center px-5 py-6">
         <div className="w-full max-w-lg">
 
-          {user && <AddToHomeScreenBanner />}
           {user && <IosAddToHomeScreenOverlay />}
 
           {myGroups.length > 0 && (
@@ -163,6 +161,12 @@ export default async function HomePage() {
           <UpcomingFestivalsCard festivals={festivals} signedIn={!!user} />
 
           {content.show_how_competition_works !== false && <HowItWorksCard />}
+
+          <div className="w-full mt-6 text-center">
+            <Link href="/install" className="text-sm font-semibold underline" style={{ color: "var(--text-secondary)" }}>
+              📲 Install the app on your phone
+            </Link>
+          </div>
 
         </div>
       </div>
