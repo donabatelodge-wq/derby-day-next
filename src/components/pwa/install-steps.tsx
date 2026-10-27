@@ -78,7 +78,7 @@ export function InstallSteps({ kind }: { kind: StepKind }) {
       <p className="text-xs text-slate-500 mt-3 leading-relaxed">
         {kind === "ios"
           ? "Can't see \"Add to Home Screen\"? Open this page in Safari first."
-          : "Menu wording changes a little between phones and versions."}
+          : "Menu wording changes a little between phones and versions. If the icon doesn't appear, your Home screen may be locked. On Samsung: Settings, then Home screen, then turn off Lock Home screen layout."}
       </p>
     </div>
   );
