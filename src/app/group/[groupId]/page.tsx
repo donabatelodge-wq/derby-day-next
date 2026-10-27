@@ -566,7 +566,7 @@ export default function GroupDetailPage() {
     ...(group.type === "horse_racing" ? [{ id: "meetings", label: "🏇 Select Horses" }] : []),
     ...(group.type === "horse_racing" && isMember ? [{ id: "mypicks", label: "📋 My Picks" }] : []),
     ...(group.type === "last_man_standing" ? [{ id: "lms", label: "⚔️ Pick Team" }] : []),
-    ...(isOwner ? [{ id: "members", label: "Manage My Members" }] : []),
+    ...(isOwner ? [{ id: "members", label: "Manage Players" }] : []),
   ];
 
   const renderLmsStandings = () => {
