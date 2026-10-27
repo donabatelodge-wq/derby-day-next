@@ -1,8 +1,10 @@
 {
+  "id": "/",
   "name": "Derby Day",
   "short_name": "Derby Day",
   "description": "Horse racing picks and Last Man Standing competitions",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
