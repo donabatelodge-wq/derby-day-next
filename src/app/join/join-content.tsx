@@ -146,7 +146,7 @@ export default function JoinContent() {
             </div>
             {previewGroup.entries_closed && (
               <p className="mt-3 text-sm font-semibold text-red-700">
-                Entries closed. This competition has started, so new players can&apos;t join.
+                Entries closed. Joining closes 30 minutes before the first race.
               </p>
             )}
           </div>
