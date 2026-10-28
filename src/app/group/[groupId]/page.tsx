@@ -385,7 +385,7 @@ export default function GroupDetailPage() {
       if (todayMeetingId) {
         const { data: todayRaces } = await supabase.from("races").select("race_time").eq("meeting_id", todayMeetingId).not("race_time", "is", null).order("race_time");
         if (todayRaces && todayRaces.length > 0) {
-          setFirstRaceDeadline(new Date(`${todayStr}T${todayRaces[0].race_time}:00`));
+          setFirstRaceDeadline(new Date(new Date(`${todayStr}T${todayRaces[0].race_time}:00`).getTime() - 30 * 60 * 1000));
         }
       }
 
