@@ -217,7 +217,7 @@ export default function InviteContent() {
             style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.35)" }}>
             <p className="text-white font-bold text-base">Entries closed</p>
             <p className="text-white/70 text-sm mt-1">
-              This competition has started, so no more players can join.
+             Joining closes 30 minutes before the first race, so no more players can join.
             </p>
           </div>
         ) : (
