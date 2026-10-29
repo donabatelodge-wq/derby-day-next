@@ -17,6 +17,7 @@ import { PL_TEAMS } from "@/lib/lms-teams";
 import { LeaderboardNote } from "@/components/group/leaderboard-note";
 import { PickReminders } from "@/components/group/pick-reminders";
 import { RemovedPlayers } from "@/components/group/removed-players";
+import { QrCodeButton } from "@/components/group/qr-code-button";
 
 const STATUS_CONFIG = {
   upcoming:    { label: "Upcoming",    Icon: Clock,        color: "text-blue-600",  bg: "bg-blue-50",  border: "border-blue-200"  },
@@ -737,6 +738,12 @@ export default function GroupDetailPage() {
               </button>
             )}
           </div>
+
+             {(isOwner || isAdmin) && (
+            <div className="mt-3">
+              <QrCodeButton group={group} />
+            </div>
+          )}
 
           {((isOwner || isAdmin) || (isMember && !isOwner)) && (
             <div className="mt-5 pt-4 flex flex-col gap-2" style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}>
