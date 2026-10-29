@@ -277,9 +277,9 @@ export function QrCodeButton({ group, onSaved }: { group: any; onSaved?: (messag
             </div>
 
             <div>
-              <label className="text-xs font-medium text-slate-500 block mb-1">Put Your Message about entry Payments etc. on the poster (optional)</label>
+              <label className="text-xs font-medium text-slate-500 block mb-1">Message on the poster (optional): how to enter, who to pay, closing time</label>
               <textarea value={message} onChange={e => setMessage(e.target.value)} maxLength={MESSAGE_MAX} rows={5}
-                placeholder={"e.g. Use your full name so we can match your entry.\nEntry arrangements: see the organiser."}
+                placeholder={"e.g. Use your full name so we can match your entry.\nEntry fee: see Jim. Unpaid entries are removed before racing."}
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base" />
               <div className="flex items-center justify-between mt-1.5 gap-2">
                 <p className="text-xs text-slate-400">{message.length}/{MESSAGE_MAX} · Enter makes a new line</p>
@@ -288,7 +288,7 @@ export function QrCodeButton({ group, onSaved }: { group: any; onSaved?: (messag
                   {saving ? "Saving..." : !dirty && saved ? "Saved ✓" : "Save message"}
                 </button>
               </div>
-              <p className="text-xs text-slate-400 mt-1">Saved with this competition, so you can edit it and reprint any time.</p>
+                <p className="text-xs text-slate-400 mt-1">Saved with this competition, so you can edit and reprint any time. Posters are public, so keep bank details off and say who to ask instead.</p>
             </div>
 
             {poster ? (
