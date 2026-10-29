@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import { QrCode, X, Download, Printer, Copy, Share2 } from "lucide-react";
 import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
 
 const FONT = `system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`;
 const font = (px: number, weight = "700") => `${weight} ${px}px ${FONT}`;
+
+const MESSAGE_MAX = 400;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -16,7 +19,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+function wrapLine(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let line = "";
@@ -29,88 +32,119 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): st
   return lines;
 }
 
-// Draws a printable poster (title, QR code, join details) and returns it as a PNG data URL.
+// Wraps text (keeping the organiser's own line breaks) and shrinks the font until it fits the box.
+function fitText(
+  ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxHeight: number,
+  maxPx: number, minPx: number, weight: string,
+): { px: number; lineH: number; lines: string[] } {
+  const paragraphs = text.replace(/\r/g, "").split("\n");
+  let result = { px: minPx, lineH: Math.round(minPx * 1.3), lines: [] as string[] };
+  for (let px = maxPx; px >= minPx; px -= 2) {
+    ctx.font = font(px, weight);
+    const lines = paragraphs.flatMap(p => (p.trim() ? wrapLine(ctx, p.trim(), maxWidth) : [""]));
+    const lineH = Math.round(px * 1.3);
+    result = { px, lineH, lines };
+    if (lines.length * lineH <= maxHeight) return result;
+  }
+  // Still too long at the smallest size: cut it off with an ellipsis.
+  const maxLines = Math.max(1, Math.floor(maxHeight / result.lineH));
+  const cut = result.lines.slice(0, maxLines);
+  if (result.lines.length > maxLines) cut[cut.length - 1] = `${cut[cut.length - 1].replace(/[\s.,;:]+$/, "")}…`;
+  return { ...result, lines: cut };
+}
+
+// Draws a fixed-size A4 poster (title, QR code, join details, message) and returns a PNG data URL.
 async function buildPoster(opts: {
-  url: string; name: string; code: string; pin: string; extra: string; host: string;
+  url: string; name: string; code: string; pin: string; message: string; host: string;
 }): Promise<string> {
+  const W = 1240;
+  const H = 1754; // A4 proportions (1 : 1.414)
+  const pad = 90;
+  const message = opts.message.trim();
+  const hasMessage = message.length > 0;
+  const qrSize = hasMessage ? 560 : 760;
+
   const mod: any = await import("qrcode");
   const toDataURL = mod.toDataURL || mod.default?.toDataURL;
   const qrUrl: string = await toDataURL(opts.url, {
-    errorCorrectionLevel: "M", margin: 1, width: 800,
+    errorCorrectionLevel: "M", margin: 1, width: qrSize,
     color: { dark: "#0f172a", light: "#ffffff" },
   });
   const qrImg = await loadImage(qrUrl);
-
-  const W = 1080;
-  const pad = 80;
-  const measure = document.createElement("canvas").getContext("2d")!;
-
-  measure.font = font(66);
-  const titleLines = wrap(measure, opts.name, W - pad * 2).slice(0, 3);
-
-  measure.font = font(38, "500");
-  const extraLines = opts.extra.trim() ? wrap(measure, opts.extra.trim(), W - pad * 2).slice(0, 2) : [];
-
-  const headerH = 230;
-  const titleTop = headerH + 80;
-  const titleBottom = titleTop + titleLines.length * 80;
-  const qrSize = 640;
-  const qrY = titleBottom + 60;
-  const scanY = qrY + qrSize + 80;
-  const codeY = scanY + 120;
-  const extraTop = codeY + 90;
-  const lastBottom = extraLines.length > 0 ? extraTop + extraLines.length * 52 : codeY + 60;
-  const footerY = lastBottom + 50;
-  const H = footerY + 40 + 70;
 
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d")!;
   ctx.textAlign = "center";
+  ctx.textBaseline = "top";
 
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H);
 
+  // Header band
+  const headerH = 230;
   const grad = ctx.createLinearGradient(0, 0, W, 0);
   grad.addColorStop(0, "#0f172a");
   grad.addColorStop(1, "#0f4c2a");
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, headerH);
-
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#ffffff";
-  ctx.font = font(84);
-  ctx.fillText("🏇 Derby Day", W / 2, 95);
+  ctx.font = font(92);
+  ctx.fillText("🏇 Derby Day", W / 2, 100);
   ctx.fillStyle = "rgba(255,255,255,0.7)";
-  ctx.font = font(32, "500");
-  ctx.fillText("Competition Management Platform", W / 2, 165);
-
+  ctx.font = font(34, "500");
+  ctx.fillText("Competition Management Platform", W / 2, 175);
   ctx.textBaseline = "top";
-  ctx.fillStyle = "#0f172a";
-  ctx.font = font(66);
-  titleLines.forEach((l, i) => ctx.fillText(l, W / 2, titleTop + i * 80));
 
+  // Competition name: fixed zone, shrinks to fit (up to a couple of lines)
+  const titleTop = headerH + 25;
+  const titleZoneH = 190;
+  const title = fitText(ctx, opts.name, W - pad * 2, titleZoneH, 78, 42, "700");
+  const titleBlockH = title.lines.length * title.lineH;
+  ctx.fillStyle = "#0f172a";
+  ctx.font = font(title.px);
+  title.lines.forEach((l, i) =>
+    ctx.fillText(l, W / 2, titleTop + (titleZoneH - titleBlockH) / 2 + i * title.lineH));
+
+  // QR code
   const boxPad = 24;
-  const qrX = (W - qrSize) / 2;
+  const boxTop = titleTop + titleZoneH + 25;
+  const boxSize = qrSize + boxPad * 2;
+  const boxX = (W - boxSize) / 2;
   ctx.fillStyle = "#ffffff";
   ctx.strokeStyle = "#e2e8f0";
   ctx.lineWidth = 4;
-  ctx.fillRect(qrX - boxPad, qrY - boxPad, qrSize + boxPad * 2, qrSize + boxPad * 2);
-  ctx.strokeRect(qrX - boxPad, qrY - boxPad, qrSize + boxPad * 2, qrSize + boxPad * 2);
-  ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+  ctx.fillRect(boxX, boxTop, boxSize, boxSize);
+  ctx.strokeRect(boxX, boxTop, boxSize, boxSize);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(qrImg, boxX + boxPad, boxTop + boxPad, qrSize, qrSize);
+  ctx.imageSmoothingEnabled = true;
 
+  // Scan to join + code/PIN
+  const scanY = boxTop + boxSize + 30;
   ctx.fillStyle = "#16a34a";
-  ctx.font = font(88);
+  ctx.font = font(86);
   ctx.fillText("Scan to join", W / 2, scanY);
 
+  const codeY = scanY + 110;
   ctx.fillStyle = "#0f172a";
-  ctx.font = font(46, "600");
+  ctx.font = font(48, "600");
   ctx.fillText(opts.pin ? `Code ${opts.code}  ·  PIN ${opts.pin}` : `Code ${opts.code}`, W / 2, codeY);
 
-  ctx.fillStyle = "#475569";
-  ctx.font = font(38, "500");
-  extraLines.forEach((l, i) => ctx.fillText(l, W / 2, extraTop + i * 52));
+  // Footer sits at the bottom of the page
+  const footerY = H - 100;
+
+  // Message area: whatever room is left between the code line and the footer
+  if (hasMessage) {
+    const msgTop = codeY + 84;
+    const msgH = footerY - 26 - msgTop;
+    const msg = fitText(ctx, message, W - pad * 2, msgH, 46, 26, "500");
+    ctx.fillStyle = "#334155";
+    ctx.font = font(msg.px, "500");
+    msg.lines.forEach((l, i) => ctx.fillText(l, W / 2, msgTop + i * msg.lineH));
+  }
 
   ctx.fillStyle = "#64748b";
   ctx.font = font(40, "600");
@@ -119,17 +153,23 @@ async function buildPoster(opts: {
   return canvas.toDataURL("image/png");
 }
 
-// Organiser-only: a printable/downloadable QR code poster that opens this competition's
-// invite page. The PIN is built into the link, so anyone who scans can join.
-export function QrCodeButton({ group }: { group: any }) {
+// Organiser-only: a printable/downloadable A4 QR code poster that opens this competition's
+// invite page. The PIN is built into the link, so anyone who scans can join. The poster message
+// is saved on the competition so it can be edited later.
+export function QrCodeButton({ group, onSaved }: { group: any; onSaved?: (message: string) => void }) {
+  const supabase = createClient();
+  const saved: string = group.poster_message || "";
+
   const [open, setOpen] = useState(false);
-  const [extra, setExtra] = useState("");
+  const [message, setMessage] = useState(saved);
+  const [saving, setSaving] = useState(false);
   const [poster, setPoster] = useState<string | null>(null);
   const [canShareFile, setCanShareFile] = useState(false);
 
   const inviteUrl = () =>
     `${window.location.origin}/invite?code=${group.invite_code}&pin=${group.join_pin || ""}`;
   const filename = `derby-day-${String(group.name || "competition").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-poster.png`;
+  const dirty = message.trim() !== saved.trim();
 
   useEffect(() => {
     try {
@@ -150,7 +190,7 @@ export function QrCodeButton({ group }: { group: any }) {
           name: group.name || "Competition",
           code: group.invite_code,
           pin: group.join_pin || "",
-          extra,
+          message,
           host: window.location.host,
         });
         if (!cancelled) setPoster(url);
@@ -159,7 +199,27 @@ export function QrCodeButton({ group }: { group: any }) {
       }
     }, 250);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [open, extra, group.name, group.invite_code, group.join_pin]);
+  }, [open, message, group.name, group.invite_code, group.join_pin]);
+
+  const openModal = () => {
+    setMessage(group.poster_message || "");
+    setOpen(true);
+  };
+
+  const saveMessage = async () => {
+    setSaving(true);
+    const clean = message.trim();
+    const db: any = supabase;
+    const { error } = await db.from("groups").update({ poster_message: clean || null }).eq("id", group.id);
+    setSaving(false);
+    if (error) {
+      toast.error("Couldn't save the message. Please try again.");
+      return;
+    }
+    setMessage(clean);
+    onSaved?.(clean);
+    toast.success("Message saved.");
+  };
 
   const download = () => {
     if (!poster) return;
@@ -193,9 +253,9 @@ export function QrCodeButton({ group }: { group: any }) {
 
   return (
     <>
-      <button onClick={() => setOpen(true)}
+      <button onClick={openModal}
         className="flex items-center justify-center gap-2 w-full h-12 rounded-2xl text-base font-bold text-white border border-white/30 active:scale-95 transition-all">
-        <QrCode className="w-5 h-5" /> Create QR code poster
+        <QrCode className="w-5 h-5" /> QR code poster
       </button>
 
       {open && (
@@ -205,15 +265,30 @@ export function QrCodeButton({ group }: { group: any }) {
               body * { visibility: hidden !important; }
               #derby-qr-print, #derby-qr-print * { visibility: visible !important; }
               #derby-qr-print { position: fixed !important; left: 0; top: 0; width: 100%; max-height: 100vh; object-fit: contain; border: 0 !important; }
-              @page { margin: 8mm; }
+              @page { size: A4 portrait; margin: 8mm; }
             }
           `}</style>
-          <div className="w-full max-w-sm rounded-3xl p-5 space-y-4 bg-white text-slate-900 max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-sm rounded-3xl p-5 space-y-4 bg-white text-slate-900 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-base">QR code poster</h3>
+              <h3 className="font-bold text-base">QR code poster (A4)</h3>
               <button onClick={() => setOpen(false)} aria-label="Close" className="p-1 rounded-lg hover:bg-slate-100">
                 <X className="w-5 h-5 text-slate-400" />
               </button>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-slate-500 block mb-1">Message on the poster (optional)</label>
+              <textarea value={message} onChange={e => setMessage(e.target.value)} maxLength={MESSAGE_MAX} rows={5}
+                placeholder={"e.g. Use your full name so we can match your entry.\nEntry arrangements: see the organiser."}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base" />
+              <div className="flex items-center justify-between mt-1.5 gap-2">
+                <p className="text-xs text-slate-400">{message.length}/{MESSAGE_MAX} · Enter makes a new line</p>
+                <button onClick={saveMessage} disabled={!dirty || saving}
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-900 text-white disabled:opacity-40">
+                  {saving ? "Saving..." : !dirty && saved ? "Saved ✓" : "Save message"}
+                </button>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">Saved with this competition, so you can edit it and reprint any time.</p>
             </div>
 
             {poster ? (
@@ -225,13 +300,6 @@ export function QrCodeButton({ group }: { group: any }) {
                 <div className="w-6 h-6 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
               </div>
             )}
-
-            <div>
-              <label className="text-xs font-medium text-slate-500 block mb-1">Extra line on the poster (optional)</label>
-              <input value={extra} onChange={e => setExtra(e.target.value)} maxLength={80}
-                placeholder="e.g. Use your full name so we can match your entry"
-                className="w-full h-11 rounded-xl border border-slate-200 px-3 text-base" />
-            </div>
 
             <div className="grid grid-cols-2 gap-2">
               <button onClick={download} disabled={!poster}
@@ -257,6 +325,7 @@ export function QrCodeButton({ group }: { group: any }) {
 
             <p className="text-xs text-slate-500 leading-relaxed">
               The PIN is built into this code, so anyone who scans it can join. Joining closes 30 minutes before the first race.
+              Unsaved changes still appear on a poster you download or print now.
             </p>
           </div>
         </div>
