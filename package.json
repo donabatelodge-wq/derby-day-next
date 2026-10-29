@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint"
   },
-  "dependencies": {
+    "dependencies": {
+    "qrcode": "^1.5.4",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
     "date-fns": "^4.4.0",
@@ -19,7 +20,8 @@
     "sonner": "^2.0.7",
     "stripe": "^18.0.0"
   },
-  "devDependencies": {
+    "devDependencies": {
+    "@types/qrcode": "^1.5.5",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
