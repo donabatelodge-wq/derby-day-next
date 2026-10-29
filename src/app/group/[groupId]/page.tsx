@@ -741,7 +741,7 @@ export default function GroupDetailPage() {
 
              {(isOwner || isAdmin) && (
             <div className="mt-3">
-              <QrCodeButton group={group} />
+           <QrCodeButton group={group} onSaved={msg => setGroup(g => g ? ({ ...g, poster_message: msg } as any) : g)} />
             </div>
           )}
 
