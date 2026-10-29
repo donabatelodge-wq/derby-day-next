@@ -277,7 +277,7 @@ export function QrCodeButton({ group, onSaved }: { group: any; onSaved?: (messag
             </div>
 
             <div>
-              <label className="text-xs font-medium text-slate-500 block mb-1">Message on the poster (optional)</label>
+              <label className="text-xs font-medium text-slate-500 block mb-1">Put Your Message on the poster (optional)</label>
               <textarea value={message} onChange={e => setMessage(e.target.value)} maxLength={MESSAGE_MAX} rows={5}
                 placeholder={"e.g. Use your full name so we can match your entry.\nEntry arrangements: see the organiser."}
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base" />
