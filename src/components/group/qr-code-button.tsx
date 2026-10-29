@@ -195,7 +195,7 @@ export function QrCodeButton({ group }: { group: any }) {
     <>
       <button onClick={() => setOpen(true)}
         className="flex items-center justify-center gap-2 w-full h-12 rounded-2xl text-base font-bold text-white border border-white/30 active:scale-95 transition-all">
-        <QrCode className="w-5 h-5" /> QR code poster
+        <QrCode className="w-5 h-5" /> Create QR code poster
       </button>
 
       {open && (
