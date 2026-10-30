@@ -728,6 +728,7 @@ export default function GroupDetailPage() {
                 🐴 Select Horses ({meetings.length} meetings)
               </button>
             )}
+            {group.type === "horse_racing" && meetings.length > 0 && <p className="text-xs text-center text-white/60 -mt-1.5">Picks close 30 minutes before the first race</p>} 
 
              {(isOwner || isMember || isAdmin) && (
               <button onClick={handleShareInvite}
