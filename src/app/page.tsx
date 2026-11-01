@@ -161,7 +161,7 @@ export default async function HomePage() {
 
           <UpcomingFestivalsCard festivals={festivals} signedIn={!!user} />
 
-          {content.show_how_competition_works !== false && <HowItWorksCard />}
+         {content.show_how_competition_works !== false && <HowItWorksCard intro={content.how_it_works_intro} footer={content.how_it_works_footer} />}
 
         </div>
       </div>
