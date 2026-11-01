@@ -14,6 +14,8 @@ const DEFAULT_CONTENT = {
 
   show_how_competition_works: true,
   show_upcoming_festivals: true,
+    how_it_works_intro: "",
+  how_it_works_footer: "",
 
   show_info_button_1: false,
   info_button_1_label: "ℹ️ App Info",
@@ -184,7 +186,25 @@ export default function AdminWelcomeContent() {
 
         <ButtonSection title="How A Racing Competition Works" showKey="show_how_competition_works"
           form={form} setForm={setForm}
-          staticNote="Explanation card shown under the buttons. Text is fixed in code." />
+          staticNote="Explanation card shown under the buttons. Edit the wording in the two boxes below this section." />
+
+                <div className="rounded-3xl border p-4 space-y-3" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+          <p className="text-xs px-1" style={{ color: "var(--text-muted)" }}>Plain text. A blank line starts a new paragraph, and a line starting with "- " becomes a bullet. Leave a box empty to use the standard wording. The points boxes (Win, 2nd, 3rd, Best Chance) stay as they are.</p>
+          <div>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Text above the points boxes</label>
+            <textarea value={form.how_it_works_intro || ""} onChange={e => setForm({ ...form, how_it_works_intro: e.target.value })}
+              rows={5} maxLength={1500}
+              placeholder="Players in a Racing Group pay the agreed join fee privately to the Group organiser. Players then make horse selections and a Best Chance selection on each day of the arranged competition."
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Text below the points boxes</label>
+            <textarea value={form.how_it_works_footer || ""} onChange={e => setForm({ ...form, how_it_works_footer: e.target.value })}
+              rows={5} maxLength={1500}
+              placeholder="Points are awarded as follows: 3 win, 2 second, 1 third. Double points for the Best Chance selection. The Competition Leaderboard shows your progress, till an eventual winner."
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" />
+          </div>
+        </div>
 
         <p className="text-xs font-semibold uppercase tracking-widest px-1" style={{ color: "var(--text-muted)" }}>Buttons</p>
 
