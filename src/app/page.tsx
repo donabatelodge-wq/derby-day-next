@@ -88,6 +88,7 @@ export default async function HomePage() {
         <div className="w-full max-w-lg">
 
           {user && <IosAddToHomeScreenOverlay />}
+            <Link href="/install" className="w-full h-12 mb-5 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-2 transition-transform active:scale-95" style={{ background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)" }}>📲 Install the app on your phone</Link>
 
           {myGroups.length > 0 && (
             <div className="w-full mb-6">
@@ -161,12 +162,6 @@ export default async function HomePage() {
           <UpcomingFestivalsCard festivals={festivals} signedIn={!!user} />
 
           {content.show_how_competition_works !== false && <HowItWorksCard />}
-
-          <div className="w-full mt-6 text-center">
-            <Link href="/install" className="text-sm font-semibold underline" style={{ color: "var(--text-secondary)" }}>
-              📲 Install the app on your phone
-            </Link>
-          </div>
 
         </div>
       </div>
