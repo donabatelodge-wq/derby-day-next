@@ -94,15 +94,18 @@ export async function POST(request: NextRequest) {
     const footer =
       "Sent by Derby Day on behalf of the organiser. Entry arrangements are between you and the organiser. " +
       "Derby Day doesn't collect or handle entry fees or prizes. Reply to this email to reach the organiser.";
-
+    const installUrl = origin ? `${origin}/install` : "";
+    const installHtml = `<p style="font-size:14px;line-height:1.5;color:#334155;margin:0 0 24px">📲 <strong>Tip:</strong> put Derby Day on your phone's home screen for one-tap access. ${installUrl ? `<a href="${esc(installUrl)}" style="color:#16a34a;font-weight:bold">Tap here to install</a>, or use` : "Use"} the &ldquo;Install the app on your phone&rdquo; button at the top of the Welcome page.</p>`;
+    const installPlain = `Tip: put Derby Day on your phone's home screen for one-tap access. ${installUrl ? `Install: ${installUrl}\n` : ""}You can also use the "Install the app on your phone" button at the top of the Welcome page.`;
     const html = `
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#0f172a">
   <p style="font-size:13px;color:#64748b;margin:0 0 12px">Message from your organiser, ${esc(organiserName)}, about <strong>${esc(group.name)}</strong></p>
   <div style="font-size:16px;line-height:1.5;white-space:pre-wrap;margin:0 0 20px">${esc(text)}</div>
   ${link ? `<p style="margin:0 0 24px"><a href="${esc(link)}" style="display:inline-block;background:#16a34a;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 20px;border-radius:10px">Open the competition</a></p>` : ""}
+  ${installHtml}
   <p style="font-size:12px;color:#94a3b8;line-height:1.4;margin:0">${esc(footer)}</p>
 </div>`;
-    const plain = `Message from your organiser, ${organiserName}, about ${group.name}\n\n${text}\n\n${link ? link + "\n\n" : ""}${footer}`;
+    const plain = `Message from your organiser, ${organiserName}, about ${group.name}\n\n${text}\n\n${link ? link + "\n\n" : ""}${installPlain}\n\n${footer}`;
 
     let sent = 0;
     let failure: string | null = null;
