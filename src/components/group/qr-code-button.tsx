@@ -110,7 +110,7 @@ async function buildPoster(opts: {
   ctx.fillText("🏇 Derby Day", W / 2, 100);
   ctx.fillStyle = "rgba(255,255,255,0.7)";
   ctx.font = font(34, "500");
-  ctx.fillText("Competition Management Platform", W / 2, 175);
+  ctx.fillText("Horse Racing Competition", W / 2, 175);
   ctx.textBaseline = "top";
 
   // Competition name: fixed zone, shrinks to fit (up to a couple of lines)
