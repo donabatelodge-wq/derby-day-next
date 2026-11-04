@@ -939,8 +939,6 @@ export default function GroupDetailPage() {
                           )}
                         </div>
                       ))}
-                        </div>
-                      ))}
                     </div>
                   )}
                 </div>
