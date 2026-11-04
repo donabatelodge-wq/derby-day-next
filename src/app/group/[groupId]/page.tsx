@@ -18,6 +18,7 @@ import { LeaderboardNote } from "@/components/group/leaderboard-note";
 import { PickReminders } from "@/components/group/pick-reminders";
 import { RemovedPlayers } from "@/components/group/removed-players";
 import { QrCodeButton } from "@/components/group/qr-code-button";
+import { PlayerPicks } from "@/components/group/player-picks";
 
 const STATUS_CONFIG = {
   upcoming:    { label: "Upcoming",    Icon: Clock,        color: "text-blue-600",  bg: "bg-blue-50",  border: "border-blue-200"  },
@@ -319,6 +320,7 @@ export default function GroupDetailPage() {
   const [payments, setPayments] = useState<any[]>([]);
   const [raceCounts, setRaceCounts] = useState<Record<string,number>>({});
   const [firstRaceDeadline, setFirstRaceDeadline] = useState<Date|null>(null);
+  const [raceTimes, setRaceTimes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("leaderboard");
   const [selectedMeetingId, setSelectedMeetingId] = useState<string|null>(null);
@@ -373,10 +375,11 @@ export default function GroupDetailPage() {
       setPayments(paymentsData ?? []);
 
       if (groupMeetings.length > 0) {
-        const { data: allRaces } = await supabase.from("races").select("id, meeting_id").in("meeting_id", groupMeetings.map(m => m.id));
+        const { data: allRaces } = await supabase.from("races").select("id, meeting_id, race_time").in("meeting_id", groupMeetings.map(m => m.id));
         const countsMap: Record<string,number> = {};
         groupMeetings.forEach(m => { countsMap[m.id] = (allRaces ?? []).filter((r: any) => r.meeting_id === m.id).length; });
         setRaceCounts(countsMap);
+        setRaceTimes((allRaces ?? []) as any[]);
       }
 
       const todayStr = new Date().toISOString().slice(0, 10);
@@ -916,19 +919,26 @@ export default function GroupDetailPage() {
                     <div className="px-6 py-10 text-center text-sm" style={{ color: "var(--text-muted)" }}>No entries yet.</div>
                   ) : (
                     <div className="divide-y" style={{ borderColor: "var(--border)" }}>
-                      {leaderboard.map((row, i) => (
-                        <div key={row.email} className={`flex items-center justify-between px-6 py-4 ${row.email === currentUserEmail ? "bg-green-50" : ""}`}>
-                          <div className="flex items-center gap-3">
-                            <span className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0
+                   {leaderboard.map((row, i) => (
+                        <div key={row.email} className={row.email === currentUserEmail ? "bg-green-50" : ""}>
+                          <div className="flex items-center justify-between px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <span className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0
                     ${ranks[i] === 1 ? "bg-amber-400 text-white" : ranks[i] === 2 ? "bg-slate-300 text-white" : ranks[i] === 3 ? "bg-orange-300 text-white" : "bg-slate-100 text-slate-400"}`}>
                    {ranks[i]}
                   </span>
-                            <span className="text-base font-medium" style={{ color: "var(--text-primary)" }}>
-                              {(isMember || isOwner || isAdmin) ? ((group.member_names || {})[row.email] || row.participantName || row.email.split("@")[0]) : `Player ${i + 1}`}
-                              {row.email === currentUserEmail && <span className="ml-1 text-xs text-green-500 font-semibold">(you)</span>}
-                            </span>
+                              <span className="text-base font-medium" style={{ color: "var(--text-primary)" }}>
+                                {(isMember || isOwner || isAdmin) ? ((group.member_names || {})[row.email] || row.participantName || row.email.split("@")[0]) : `Player ${i + 1}`}
+                                {row.email === currentUserEmail && <span className="ml-1 text-xs text-green-500 font-semibold">(you)</span>}
+                              </span>
+                            </div>
+                            <span className="font-black text-lg text-green-600">{row.total} pts</span>
                           </div>
-                          <span className="font-black text-lg text-green-600">{row.total} pts</span>
+                          {(isMember || isOwner || isAdmin) && (
+                            <PlayerPicks email={row.email} entries={entries} meetings={meetings} raceTimes={raceTimes} now={now} onlyMeetingId={selectedMeetingId} />
+                          )}
+                        </div>
+                      ))}
                         </div>
                       ))}
                     </div>
