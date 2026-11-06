@@ -219,7 +219,8 @@ export default function AdminRacesContent() {
     load();
   };
 
-  const handleCreateRace = async () => {
+    const handleCreateRace = async () => {
+    if (!/^\d{2}:\d{2}$/.test(form.race_time)) { toast.error("Please set the race time (24-hour, e.g. 13:30)."); return; }
     setSaving(true);
     const { error } = await supabase.from("races").insert({
       meeting_id: meetingId,
@@ -248,6 +249,7 @@ export default function AdminRacesContent() {
   const handleSheetsCreateRace = async () => {
     setSheetsError("");
     if (!sheetsForm.race_number.trim()) { setSheetsError("Please enter a race number."); return; }
+    if (!/^\d{2}:\d{2}$/.test(sheetsForm.race_time)) { setSheetsError("Please set the race time (24-hour, e.g. 13:30)."); return; }
     const horses = parseSheetsRows(sheetsForm.paste);
     if (horses.length === 0) { setSheetsError("No runners found in the pasted text. Expected columns: Number, Name, Jockey, Trainer."); return; }
     setSheetsSaving(true);
@@ -276,12 +278,14 @@ export default function AdminRacesContent() {
   };
 
   const handleSaveEdit = async (raceId: string) => {
+    if (!/^\d{2}:\d{2}$/.test(editForm.race_time || "")) { toast.error("Please set the race time (24-hour, e.g. 13:30)."); return; }
     setSavingEdit(true);
     const { error } = await supabase.from("races").update({
       race_number: Number(editForm.race_number),
       race_name: editForm.race_name,
       race_type: editForm.race_type,
       distance: editForm.distance,
+      race_time: editForm.race_time,
       horses: editForm.horses.filter((h: any) => h.name?.trim()),
     }).eq("id", raceId);
     if (error) {
@@ -586,7 +590,7 @@ export default function AdminRacesContent() {
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Race Time</label>
-                  <input placeholder="e.g. 13:30" value={sheetsForm.race_time} onChange={e => setSheetsForm(f => ({ ...f, race_time: e.target.value }))}
+                   <input type="time" value={sheetsForm.race_time} onChange={e => setSheetsForm(f => ({ ...f, race_time: e.target.value }))}
                     className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
                 </div>
               </div>
@@ -670,7 +674,7 @@ export default function AdminRacesContent() {
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Race Time</label>
-                <input placeholder="e.g. 13:30" value={form.race_time} onChange={e => setForm(f => ({ ...f, race_time: e.target.value }))}
+                <input type="time" value={form.race_time} onChange={e => setForm(f => ({ ...f, race_time: e.target.value }))}
                   className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
               </div>
             </div>
@@ -732,7 +736,7 @@ export default function AdminRacesContent() {
                     <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{(race.horses || []).length} runners</p>
                   </div>
                   <div className="flex items-center gap-1.5 ml-3 flex-shrink-0">
-                    <button onClick={() => { setEditingRace(race.id); setEditForm({ race_number: race.race_number, race_name: race.race_name || "", race_type: race.race_type || "Thoroughbred", distance: race.distance || "", horses: race.horses ? [...race.horses] : [] }); setExpanded(e => ({ ...e, [race.id]: true })); }}
+                    <button onClick={() => { setEditingRace(race.id); setEditForm({ race_number: race.race_number, race_name: race.race_name || "", race_type: race.race_type || "Thoroughbred", distance: race.distance || "", race_time: race.race_time || "", horses: race.horses ? [...race.horses] : [] }); setExpanded(e => ({ ...e, [race.id]: true })); }}
                       className="w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200">
                       <Pencil className="w-3.5 h-3.5 text-slate-400" />
                     </button>
@@ -761,6 +765,11 @@ export default function AdminRacesContent() {
                             <input value={editForm.race_name} onChange={e => setEditForm((f: any) => ({ ...f, race_name: e.target.value }))}
                               className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
                           </div>
+                        </div>
+                         <div>
+                          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-muted)" }}>Race Time</label>
+                          <input type="time" value={editForm.race_time || ""} onChange={e => setEditForm((f: any) => ({ ...f, race_time: e.target.value }))}
+                            className="w-full h-11 rounded-xl border border-slate-200 px-3 text-sm" />
                         </div>
                         <div className="space-y-2">
                           <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Runners</p>
