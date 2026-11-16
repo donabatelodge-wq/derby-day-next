@@ -563,7 +563,20 @@ export default function GroupDetailPage() {
     setNewLmsName(""); setShowCreateLms(false); setCreatingLms(false);
   };
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+  // Pick lock for a meeting: earliest valid race time minus 30 minutes.
+  // Returns null if the meeting has no valid race times.
+  const meetingLock = (m: Meeting): Date | null => {
+    const times = raceTimes
+      .filter((r: any) => r.meeting_id === m.id && typeof r.race_time === "string" && /^\d{2}:\d{2}$/.test(r.race_time))
+      .map((r: any) => r.race_time as string)
+      .sort();
+    if (times.length === 0) return null;
+    const d = new Date(`${String(m.date).slice(0, 10)}T${times[0]}:00`);
+    if (isNaN(d.getTime())) return null;
+    return new Date(d.getTime() - 30 * 60 * 1000);
+  };
 
   const tabs = [
     { id: "leaderboard", label: "Leaderboard" },
@@ -989,11 +1002,31 @@ export default function GroupDetailPage() {
                       <Link href={`/enter-tips?meetingId=${m.id}&groupId=${group.id}`} className="flex-1">
                         <p className="font-medium text-base" style={{ color: "var(--text-primary)" }}>{m.name}</p>
                         <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>{format(new Date(m.date), "d MMM yyyy")}</p>
-                        {(raceCounts[m.id] || 0) > 0 ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 mt-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
-                            ✅ {raceCounts[m.id]} race{raceCounts[m.id] !== 1 ? "s" : ""} available
-                          </span>
-                        ) : (
+                          {(raceCounts[m.id] || 0) > 0 ? (() => {
+                          const n = raceCounts[m.id];
+                          const lock = meetingLock(m);
+                          const done = (m as any).status === "completed";
+                          const closed = lock !== null && now >= lock;
+                          if (done) {
+                            return (
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 mt-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                                🏁 Completed
+                              </span>
+                            );
+                          }
+                          if (closed) {
+                            return (
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 mt-1 rounded-full bg-red-50 text-red-600 border border-red-200">
+                                🔒 Picks closed
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 mt-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
+                              ✅ {n} race{n !== 1 ? "s" : ""} · picks open
+                            </span>
+                          );
+                        })() : (
                           <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 mt-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
                             ⏳ Races not yet available
                           </span>
