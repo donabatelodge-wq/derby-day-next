@@ -301,10 +301,13 @@ export default function EnterTipsContent() {
               </div>
               <div className="flex flex-col gap-2">
                 {(race.horses || []).map((horse: any) => (
-                  <button key={horse.name}
+                 <button key={horse.name}
+                    disabled={!!horse.non_runner && selections[race.id] !== horse.name}
                     onClick={() => handleSelect(race.id, selections[race.id] === horse.name ? "" : horse.name)}
                     className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-sm font-medium transition-all text-left w-full ${
-                      selections[race.id] === horse.name
+                      horse.non_runner
+                        ? "bg-red-50 border-red-200 text-slate-400 cursor-not-allowed"
+                        : selections[race.id] === horse.name
                         ? "bg-slate-900 border-slate-900 text-white"
                         : "bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-400"
                     }`}
@@ -313,7 +316,10 @@ export default function EnterTipsContent() {
                       {horse.number}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-base leading-tight">{horse.name}</div>
+                    <div className={`font-semibold text-base leading-tight ${horse.non_runner ? "line-through" : ""}`}>
+                        {horse.name}
+                        {horse.non_runner && <span className="ml-2 text-xs font-bold text-red-600 no-underline">Non-runner</span>}
+                      </div>
                       <div className={`text-xs mt-1 leading-snug ${selections[race.id] === horse.name ? "text-slate-300" : "text-slate-500"}`}>
                         {horse.jockey?.trim() ? `J. ${horse.jockey}` : ""}
                         {horse.jockey?.trim() && horse.trainer?.trim() ? " · " : ""}
