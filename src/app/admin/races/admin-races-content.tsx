@@ -365,7 +365,20 @@ export default function AdminRacesContent() {
       toast.success("Non-runner replacement applied!");
     }
   };
-
+  // Flag / un-flag a horse as a non-runner. The horse stays in the list and
+  // nobody's picks are touched; players see it struck through and can change.
+  const toggleNonRunner = async (raceId: string, horseName: string) => {
+    const race = races.find((r: any) => r.id === raceId);
+    if (!race) return;
+    const horses = (race.horses || []).map((h: any) =>
+      h.name === horseName ? { ...h, non_runner: !h.non_runner } : h
+    );
+    const flagged = !!horses.find((h: any) => h.name === horseName)?.non_runner;
+    const { error } = await supabase.from("races").update({ horses }).eq("id", raceId);
+    if (error) { toast.error(`Couldn't update: ${error.message}`); return; }
+    await load();
+    toast.success(flagged ? `${horseName} marked as a non-runner.` : `${horseName} reinstated.`);
+  };
   const handleApiImport = async () => {
     if (!apiCourse.trim()) { setApiImportError("Please enter a course name."); return; }
     setApiImporting(true);
@@ -804,21 +817,28 @@ export default function AdminRacesContent() {
                           <div className="mb-4">
                             <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Runners</p>
                             <div className="space-y-1">
-                              {race.horses.map((h: any) => (
-                                <div key={h.name} className="text-xs rounded-lg px-3 py-2 border flex items-center gap-2" style={{ background: "var(--bg)", borderColor: "var(--border)" }}>
+                                {race.horses.map((h: any) => (
+                                <div key={h.name} className={`text-xs rounded-lg px-3 py-2 border flex items-center gap-2 flex-wrap ${h.non_runner ? "opacity-70" : ""}`} style={{ background: "var(--bg)", borderColor: "var(--border)" }}>
                                   <span className="w-5 flex-shrink-0" style={{ color: "var(--text-muted)" }}>{h.number}.</span>
-                                  <div className="flex-1">
-                                    <span className="font-medium" style={{ color: "var(--text-primary)" }}>{h.name}</span>
+                                  <div className="flex-1 min-w-[120px]">
+                                    <span className={`font-medium ${h.non_runner ? "line-through" : ""}`} style={{ color: "var(--text-primary)" }}>{h.name}</span>
+                                    {h.non_runner && <span className="ml-2 font-semibold text-red-600">Non-runner</span>}
                                     {(h.jockey || h.trainer) && (
                                       <span className="ml-2" style={{ color: "var(--text-muted)" }}>
                                         {h.jockey && `J: ${h.jockey}`}{h.jockey && h.trainer && " · "}{h.trainer && `T: ${h.trainer}`}
                                       </span>
                                     )}
                                   </div>
-                                  <button onClick={() => openNonRunnerPanel(race.id, h.name)}
-                                    className="flex items-center gap-1 text-xs font-semibold bg-orange-100 text-orange-600 hover:bg-orange-200 border border-orange-300 rounded-lg px-2.5 py-1 flex-shrink-0">
-                                    <AlertCircle className="w-3.5 h-3.5" /> Non-Runner
-                                  </button>
+                                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                                    <button onClick={() => toggleNonRunner(race.id, h.name)}
+                                      className={`flex items-center gap-1 text-xs font-semibold border rounded-lg px-2.5 py-1 ${h.non_runner ? "bg-green-100 text-green-700 hover:bg-green-200 border-green-300" : "bg-red-100 text-red-600 hover:bg-red-200 border-red-300"}`}>
+                                      {h.non_runner ? "Reinstate" : "Mark NR"}
+                                    </button>
+                                    <button onClick={() => openNonRunnerPanel(race.id, h.name)}
+                                      className="flex items-center gap-1 text-xs font-semibold bg-orange-100 text-orange-600 hover:bg-orange-200 border border-orange-300 rounded-lg px-2.5 py-1">
+                                      <AlertCircle className="w-3.5 h-3.5" /> Replace picks
+                                    </button>
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -861,7 +881,7 @@ export default function AdminRacesContent() {
 
       {nonRunnerPanel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.85)" }}>
-          <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-2xl bg-white">
+           <div className="w-full max-w-md rounded-2xl shadow-2xl bg-white max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-orange-500" />
@@ -893,7 +913,7 @@ export default function AdminRacesContent() {
                       className="w-full h-12 rounded-xl border border-slate-200 px-3 text-sm bg-white">
                       <option value="">— Select replacement —</option>
                       {(races.find(r => r.id === nonRunnerPanel.raceId)?.horses || [])
-                        .filter((h: any) => h.name !== nonRunnerPanel.horseName)
+                     .filter((h: any) => h.name !== nonRunnerPanel.horseName && !h.non_runner)
                         .map((h: any) => <option key={h.name} value={h.name}>{h.number}. {h.name}</option>)}
                     </select>
                   </div>
