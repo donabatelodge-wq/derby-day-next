@@ -32,6 +32,7 @@ export default function EnterTipsContent() {
   const [, setTick] = useState(0);
   const [meetingDate, setMeetingDate] = useState<string | null>(null);
   const [firstRaceTime, setFirstRaceTime] = useState<string | null>(null);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => setTick(t => t + 1), 1000);
@@ -59,6 +60,25 @@ export default function EnterTipsContent() {
 
       setMeeting(meetingData);
       setRaces(racesData ?? []);
+            // Already entered? Open the entry for editing (the lock still applies).
+      let existingQuery = supabase.from("entries").select("id, participant_name, selections")
+        .eq("meeting_id", meetingId).eq("user_email", user.email ?? "");
+      if (groupId) existingQuery = existingQuery.eq("group_id", groupId);
+      else existingQuery = existingQuery.is("group_id", null);
+      const { data: existing } = await existingQuery.maybeSingle();
+      if (existing) {
+        const sel: Record<string, string | null> = {};
+        let bc: string | null = null;
+        for (const s of (existing.selections || []) as any[]) {
+          if (s.horse_name) sel[s.race_id] = s.horse_name;
+          if (s.is_best_chance) bc = s.race_id;
+        }
+        setSelections(sel);
+        setBestChance(bc);
+        setEditingEntryId(existing.id);
+        setName(existing.participant_name || "");
+        setNameSubmitted(true);
+      }
 
       if (meetingData?.date) {
         setMeetingDate(meetingData.date);
@@ -95,20 +115,28 @@ export default function EnterTipsContent() {
     if (bestChance === raceId && !newVal) setBestChance(null);
   };
 
-  const allSelected = races.length > 0 && races.every(r => selections[r.id]);
+    const allSelected = races.length > 0 && races.every(r => selections[r.id]);
+  const isNonRunner = (race: any, horseName?: string | null) =>
+    !!horseName && (race.horses || []).some((h: any) => h.name === horseName && h.non_runner);
+  const hasNonRunnerPick = races.some(r => isNonRunner(r, selections[r.id]));
+  // Lock time shown to players: first race minus 30 minutes (HH:MM).
+  const lockLabel = (() => {
+    if (!firstRaceTime || !/^\d{2}:\d{2}$/.test(firstRaceTime)) return null;
+    const [h, m] = firstRaceTime.split(":").map(Number);
+    const t = h * 60 + m - 30;
+    if (t < 0) return null;
+    return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+  })();
 
-  const handleSubmit = async () => {
+    const handleSubmit = async () => {
     if (isDeadlinePassed(meetingDate!, firstRaceTime!)) {
       toast.error("Entry deadline has passed. Picks are now locked.");
       return;
     }
-    const exists = await checkExistingEntry();
-    if (exists) {
-      toast.error("You have already submitted an entry for this meeting.");
-      setAlreadyEntered(true);
+    if (hasNonRunnerPick) {
+      toast.error("One of your picks is a non-runner. Please change it first.");
       return;
     }
-    setSaving(true);
     const selArray = races.map(r => ({
       race_id: r.id,
       race_number: r.race_number,
@@ -116,6 +144,28 @@ export default function EnterTipsContent() {
       is_best_chance: bestChance === r.id,
       finish_position: null,
     }));
+
+    // Editing an existing entry: one atomic, server-checked update.
+    if (editingEntryId) {
+      setSaving(true);
+      const { error } = await supabase.rpc("update_my_picks", { p_entry_id: editingEntryId, p_selections: selArray });
+      if (error) {
+        toast.error(error.message || "Couldn't update your picks. Please try again.");
+      } else {
+        setSubmitted(true);
+        toast.success("Picks updated! Good luck!");
+      }
+      setSaving(false);
+      return;
+    }
+
+    const exists = await checkExistingEntry();
+    if (exists) {
+      toast.error("You have already submitted an entry for this meeting.");
+      setAlreadyEntered(true);
+      return;
+    }
+    setSaving(true);
     const { error } = await supabase.from("entries").insert({
       meeting_id: meetingId,
       group_id: groupId || null,
@@ -207,8 +257,14 @@ export default function EnterTipsContent() {
       <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
         <CheckCircle className="w-8 h-8 text-emerald-500" />
       </div>
-      <h2 className="text-2xl font-bold text-slate-900 mb-2">Entry Submitted!</h2>
-      <p className="text-slate-500 mb-6">Good luck, {name}. Check the leaderboard once results are in.</p>
+      <h2 className="text-2xl font-bold text-slate-900 mb-2">{editingEntryId ? "Picks Updated!" : "Entry Submitted!"}</h2>
+      <p className="text-slate-500 mb-3">Good luck, {name}. Check the leaderboard once results are in.</p>
+      <p className="text-sm text-slate-500 mb-6">
+        Changed your mind or a non-runner?{" "}
+        <a href={`/enter-tips?meetingId=${meetingId}${groupId ? `&groupId=${groupId}` : ""}`} className="underline font-semibold">
+          Change my picks{lockLabel ? ` until ${lockLabel}` : ""}
+        </a>
+      </p>
       {groupId
         ? <Link href={`/group/${groupId}`} className="text-sm text-slate-500 underline">Back to competition</Link>
         : <Link href="/" className="text-sm text-slate-500 underline">Back to home</Link>
@@ -274,8 +330,21 @@ export default function EnterTipsContent() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-slate-900">{meeting.name}</h1>
           <p className="text-slate-500 mt-1">
-            Pick one horse per race · Mark your <span className="text-amber-500 font-semibold">Best Chance</span> for double points
+           Pick one horse per race · Mark your <span className="text-amber-500 font-semibold">Best Chance</span> for double points
           </p>
+          <p className="text-xs text-slate-400 mt-2">
+            If a horse you pick is a non-runner and you haven&apos;t changed it by the lock, it is replaced by the S.P. favourite.
+          </p>
+          {editingEntryId && (
+            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              You&apos;ve already entered. You can change your picks{lockLabel ? ` until ${lockLabel}` : " until the lock"}.
+            </div>
+          )}
+          {hasNonRunnerPick && (
+            <div className="mt-3 rounded-xl border-2 border-red-400 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              ⚠️ One of your picks is a non-runner. Choose another horse in that race, then tap {editingEntryId ? "Update my picks" : "Submit Entry"}.
+            </div>
+          )} 
         </div>
         <div className="space-y-4 mb-8">
           {races.map(race => (
@@ -349,10 +418,10 @@ export default function EnterTipsContent() {
             <Star className="w-4 h-4 inline mr-1" /> Don&apos;t forget to mark your <strong>Best Chance</strong> — it scores double points!
           </div>
         )}
-        <button onClick={handleSubmit} disabled={!allSelected || !bestChance || saving}
+          <button onClick={handleSubmit} disabled={!allSelected || !bestChance || saving || hasNonRunnerPick}
           className="w-full h-12 bg-slate-900 hover:bg-slate-700 text-white rounded-xl text-base font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
           <Send className="w-4 h-4" />
-          {saving ? "Submitting..." : "Submit Entry"}
+          {saving ? "Saving..." : editingEntryId ? "Update my picks" : "Submit Entry"}
         </button>
         <p className="text-center text-xs text-slate-400 mt-3">
           {Object.values(selections).filter(Boolean).length} of {races.length} races selected
