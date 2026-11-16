@@ -375,7 +375,7 @@ export default function GroupDetailPage() {
       setPayments(paymentsData ?? []);
 
       if (groupMeetings.length > 0) {
-        const { data: allRaces } = await supabase.from("races").select("id, meeting_id, race_time").in("meeting_id", groupMeetings.map(m => m.id));
+        const { data: allRaces } = await supabase.from("races").select("id, meeting_id, race_number, race_time, horses").in("meeting_id", groupMeetings.map(m => m.id));
         const countsMap: Record<string,number> = {};
         groupMeetings.forEach(m => { countsMap[m.id] = (allRaces ?? []).filter((r: any) => r.meeting_id === m.id).length; });
         setRaceCounts(countsMap);
@@ -831,7 +831,40 @@ export default function GroupDetailPage() {
             </div>
           );
         })()}
-
+                {group.type === "horse_racing" && isMember && (() => {
+          const items: { key: string; meetingId: string; meetingName: string; raceNumber: any; horse: string; lock: Date }[] = [];
+          entries
+            .filter(e => e.user_email === currentUserEmail && e.submitted)
+            .forEach(e => {
+              const m = meetings.find(mm => mm.id === e.meeting_id);
+              if (!m || (m as any).status !== "open") return;
+              const lock = meetingLock(m);
+              if (!lock || now >= lock) return;
+              ((e.selections || []) as any[]).forEach((s: any) => {
+                const race = raceTimes.find((r: any) => r.id === s.race_id);
+                if ((race?.horses || []).some((h: any) => h.name === s.horse_name && h.non_runner)) {
+                  items.push({ key: `${e.id}-${s.race_id}`, meetingId: m.id, meetingName: m.name, raceNumber: s.race_number, horse: s.horse_name, lock });
+                }
+              });
+            });
+          if (items.length === 0) return null;
+          return (
+            <div className="mb-6 rounded-2xl p-5 border-2 border-red-400 bg-red-50 space-y-3">
+              <p className="text-base font-bold text-red-700">⚠️ Non-runner in your picks</p>
+              {items.map(it => (
+                <div key={it.key} className="flex items-center justify-between gap-3">
+                  <p className="text-sm text-red-700">
+                    {it.meetingName}, Race {it.raceNumber}: <strong>{it.horse}</strong> is a non-runner. Change it before {format(it.lock, "HH:mm")}.
+                  </p>
+                  <Link href={`/enter-tips?meetingId=${it.meetingId}&groupId=${group.id}`}
+                    className="flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 whitespace-nowrap">
+                    Change →
+                  </Link>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
         <div className="flex gap-1 mb-6 rounded-xl p-1.5" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => {
@@ -1150,7 +1183,17 @@ export default function GroupDetailPage() {
                   return (
                     <div key={entry.id} className="px-6 py-5">
                       <div className="flex items-center justify-between mb-3">
-                        <p className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>{meeting?.name || "Meeting"}</p>
+                       <div>
+                          <p className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>{meeting?.name || "Meeting"}</p>
+                          {meeting && (meeting as any).status === "open" && (() => {
+                            const lock = meetingLock(meeting);
+                            return lock && now < lock ? (
+                              <Link href={`/enter-tips?meetingId=${meeting.id}&groupId=${group.id}`} className="text-xs font-semibold text-green-600 underline">
+                                Change my picks until {format(lock, "HH:mm")}
+                              </Link>
+                            ) : null;
+                          })()}
+                        </div>
                         <span className="font-black text-lg text-green-600">{entry.total_points || 0} pts</span>
                       </div>
                       <div className="space-y-2">
