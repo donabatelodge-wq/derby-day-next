@@ -134,7 +134,7 @@ export default function EnterTipsContent() {
       return;
     }
     if (hasNonRunnerPick) {
-      toast.error("One of your picks is a non-runner. Please change it first.");
+    toast.error("One or more of your picks is a non-runner. Please change them first.");
       return;
     }
     const selArray = races.map(r => ({
@@ -342,7 +342,7 @@ export default function EnterTipsContent() {
           )}
           {hasNonRunnerPick && (
             <div className="mt-3 rounded-xl border-2 border-red-400 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-              ⚠️ One of your picks is a non-runner. Choose another horse in that race, then tap {editingEntryId ? "Update my picks" : "Submit Entry"}.
+            ⚠️ One or more of your picks is a non-runner. Choose another horse in each affected race, then tap {editingEntryId ? "Update my picks" : "Submit Entry"}.
             </div>
           )} 
         </div>
